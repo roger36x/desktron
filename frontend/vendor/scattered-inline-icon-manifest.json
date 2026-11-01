@@ -1,0 +1,492 @@
+{
+  "schema": 1,
+  "version": "approved-scattered-26-v1",
+  "status": "applied-to-source",
+  "count": 26,
+  "reuse_count": 24,
+  "new_count": 2,
+  "scope": "Approved 24 reuses plus 12/42; TaskNote V3 and note V19 separately adopted, Timeline artwork retired",
+  "license": "Apache-2.0 subject to project rightsholder confirmation",
+  "adaptations": [
+    "Original display dimensions, classes and control IDs preserved",
+    "Reviewed geometry and paint widths pinned on child group against legacy CSS",
+    "Stroke color follows existing context: approval --ink-42, metric #fff, warning currentColor"
+  ],
+  "icons": [
+    {
+      "id": 9,
+      "label": "代码块复制",
+      "file": "frontend/app-core.js",
+      "kind": "reuse-reviewed-project-drawing",
+      "source_file": "frontend/icons/reviewed-remaining/HS_ICONS-copy.svg",
+      "source_symbol": null,
+      "source_sha256": "1b8f0eabad1c0922fefb0052833f226f6bc67f05b25e95bd5c7a4ab6c9d6cbb5",
+      "occurrences": 1,
+      "variants": [
+        {
+          "svg_sha256": "7217e760a0aab6eaf0155a6d192346d2c6e95fb71eb4498f9e75020b0dbe70c8",
+          "display_attributes": {
+            "width": "14",
+            "height": "14"
+          }
+        }
+      ]
+    },
+    {
+      "id": 12,
+      "label": "密码显隐",
+      "file": "frontend/app-settings-sections.js",
+      "kind": "new-semantic-construction-32-grid",
+      "source_file": "frontend/icons/reviewed-scattered/12-eye.svg",
+      "source_symbol": null,
+      "source_sha256": "9609f381f3db8f06e90b9929a2cc3f5fe88c49b7aff117fe7e36d6a14b465c17",
+      "occurrences": 1,
+      "variants": [
+        {
+          "svg_sha256": "2eba2a85abaf62fbc62b64dd8532a6086ebbe8156fec077892f6d07f5c8d6669",
+          "display_attributes": {
+            "width": "15",
+            "height": "15"
+          }
+        }
+      ]
+    },
+    {
+      "id": 14,
+      "label": "记忆",
+      "file": "frontend/app-panel-arrangement-system.js",
+      "kind": "reuse-reviewed-project-drawing",
+      "source_file": "frontend/app-core.js",
+      "source_symbol": "ICONS.memory",
+      "source_sha256": "c2746bbb43caf70b6e7bca3330a1464238d4c9c0c5e7ab7f6708c57f02c6a1e4",
+      "occurrences": 1,
+      "variants": [
+        {
+          "svg_sha256": "193825096439859ae4546162fd3e8285eaad22657ff29f195c7aa94f29368bef",
+          "display_attributes": {}
+        }
+      ]
+    },
+    {
+      "id": 16,
+      "label": "返回",
+      "file": "frontend/app-panel-arrangement-system.js",
+      "kind": "reuse-reviewed-project-drawing",
+      "source_file": "frontend/app-core.js",
+      "source_symbol": "ICONS.back",
+      "source_sha256": "7f342652dc4475c8ef835219a19619d6e1e7acda5362bb7c9d1fd3f7fc2e16c5",
+      "occurrences": 1,
+      "variants": [
+        {
+          "svg_sha256": "012e4ffc00ca5f91bce86254ee9bf471d178da8cc8aead42f04553387b4a17ba",
+          "display_attributes": {}
+        }
+      ]
+    },
+    {
+      "id": 17,
+      "label": "进入",
+      "file": "frontend/app-panel-arrangement-system.js",
+      "kind": "reuse-reviewed-project-drawing",
+      "source_file": "frontend/app-core.js",
+      "source_symbol": "ICONS.enter",
+      "source_sha256": "fe5b5d4cb5b8c62e07beb38c712adac1c0b3aa8d6f58e2b76a488afd75983db2",
+      "occurrences": 1,
+      "variants": [
+        {
+          "svg_sha256": "cdeb9b68e6f1d6f0c0b44a1e7fe8c94a863538254cc7b974bf7db182d076c9ec",
+          "display_attributes": {}
+        }
+      ]
+    },
+    {
+      "id": 18,
+      "label": "警告",
+      "file": "frontend/app-panel-arrangement-system.js",
+      "kind": "reuse-reviewed-project-drawing",
+      "source_file": "frontend/icons/status-alert.svg",
+      "source_symbol": null,
+      "source_sha256": "fea0c95e0a32f5465088f3aa4f04507609aaf4c3d7f8afcd547043d1e90502ba",
+      "occurrences": 1,
+      "variants": [
+        {
+          "svg_sha256": "e715f33fa6571cc2ca1375de835a31add781db3f1193bd17f0fb4c21e587a872",
+          "display_attributes": {}
+        }
+      ]
+    },
+    {
+      "id": 19,
+      "label": "运行",
+      "file": "frontend/app-panel-arrangement-system.js",
+      "kind": "reuse-reviewed-project-drawing",
+      "source_file": "frontend/app-core.js",
+      "source_symbol": "ICONS.resume",
+      "source_sha256": "9a68f293c62d460b92c074fa25327a91cfced6780e1ae18bd7027d9b5297addd",
+      "occurrences": 1,
+      "variants": [
+        {
+          "svg_sha256": "2cd3950fbfa370be89b7c4a8f6bd1cbdfe957dc5cb9371113c88a91eb7c5da2d",
+          "display_attributes": {}
+        }
+      ]
+    },
+    {
+      "id": 23,
+      "label": "审批展开",
+      "file": "frontend/app-approval.js",
+      "kind": "reuse-reviewed-project-drawing",
+      "source_file": "frontend/icons/reviewed-remaining/_ARR_ICONS-down.svg",
+      "source_symbol": null,
+      "source_sha256": "d0b3ba8b1ee123a240e508c0a900900c28402547d92c43e47bb4081c1bf7f184",
+      "occurrences": 1,
+      "variants": [
+        {
+          "svg_sha256": "3e91141ad57007f4572ecc001acbdf40de3c521c52478b03ea64146819fbc52e",
+          "display_attributes": {
+            "class": "appr-chev"
+          }
+        }
+      ]
+    },
+    {
+      "id": 24,
+      "label": "关闭",
+      "file": "frontend/app-rail-nav.js",
+      "kind": "reuse-reviewed-project-drawing",
+      "source_file": "frontend/app-core.js",
+      "source_symbol": "ICONS.close",
+      "source_sha256": "09d3f8085f75358cf710db20f83372bf565ec6ea950455f5e41d1fe91acf0a16",
+      "occurrences": 1,
+      "variants": [
+        {
+          "svg_sha256": "b21cd4601de0ca3ec9995726ef14ee2db5e8e20e345c1c54f6b2540b3ae15279",
+          "display_attributes": {}
+        }
+      ]
+    },
+    {
+      "id": 25,
+      "label": "返回",
+      "file": "frontend/app-rail-nav.js",
+      "kind": "reuse-reviewed-project-drawing",
+      "source_file": "frontend/app-core.js",
+      "source_symbol": "ICONS.back",
+      "source_sha256": "7f342652dc4475c8ef835219a19619d6e1e7acda5362bb7c9d1fd3f7fc2e16c5",
+      "occurrences": 1,
+      "variants": [
+        {
+          "svg_sha256": "2b920032223900251ebd43b5cd343487cc60b452ca5983e36839912e2f6712ef",
+          "display_attributes": {}
+        }
+      ]
+    },
+    {
+      "id": 26,
+      "label": "搜索",
+      "file": "frontend/app-rail-nav.js",
+      "kind": "reuse-reviewed-project-drawing",
+      "source_file": "frontend/icons/reviewed-remaining/_ARR_ICONS-search.svg",
+      "source_symbol": null,
+      "source_sha256": "6ca280b2bbefa85bdb2e550cd1d1704b62f616510d0acf5bb131b3f915a727d4",
+      "occurrences": 1,
+      "variants": [
+        {
+          "svg_sha256": "65304e1a7ca384902186892cbc4ce9f537f18edd64cf88e8bf857549a4afce94",
+          "display_attributes": {}
+        }
+      ]
+    },
+    {
+      "id": 27,
+      "label": "侧栏",
+      "file": "frontend/pages/notepad.html",
+      "kind": "reuse-reviewed-project-drawing",
+      "source_file": "frontend/app-core.js",
+      "source_symbol": "ICONS.sidebar",
+      "source_sha256": "f6b9bb632f554c9b90a953743ef00d09126cabb1a92c6e2d794a833eb174fa82",
+      "occurrences": 2,
+      "variants": [
+        {
+          "svg_sha256": "29f7356554ca0513e2b4ed15834a93874141df49acb8a986e1859cbc1b3e912b",
+          "display_attributes": {}
+        },
+        {
+          "svg_sha256": "29f7356554ca0513e2b4ed15834a93874141df49acb8a986e1859cbc1b3e912b",
+          "display_attributes": {}
+        }
+      ]
+    },
+    {
+      "id": 28,
+      "label": "新增文件夹",
+      "file": "frontend/pages/notepad.html",
+      "kind": "reuse-reviewed-project-drawing",
+      "source_file": "frontend/app-core.js",
+      "source_symbol": "ICONS.plus",
+      "source_sha256": "d13341dc43946d73f39ec1f8cf4c2236a16b22b02133c9df9747697f4642ad79",
+      "occurrences": 1,
+      "variants": [
+        {
+          "svg_sha256": "dcdbdd4aba24c6762d9d04c4453317f25cff33088359fbf0b39d1921f520d9b5",
+          "display_attributes": {}
+        }
+      ]
+    },
+    {
+      "id": 29,
+      "label": "返回",
+      "file": "frontend/pages/notepad.html",
+      "kind": "reuse-reviewed-project-drawing",
+      "source_file": "frontend/app-core.js",
+      "source_symbol": "ICONS.back",
+      "source_sha256": "7f342652dc4475c8ef835219a19619d6e1e7acda5362bb7c9d1fd3f7fc2e16c5",
+      "occurrences": 2,
+      "variants": [
+        {
+          "svg_sha256": "509fff1a45e36ab342cd259a91902031de0f8531dd0c4774701529a1f9347782",
+          "display_attributes": {
+            "width": "17",
+            "height": "17"
+          }
+        },
+        {
+          "svg_sha256": "509fff1a45e36ab342cd259a91902031de0f8531dd0c4774701529a1f9347782",
+          "display_attributes": {
+            "width": "17",
+            "height": "17"
+          }
+        }
+      ]
+    },
+    {
+      "id": 30,
+      "label": "新建备忘录",
+      "file": "frontend/pages/notepad.html",
+      "kind": "reuse-reviewed-project-drawing",
+      "source_file": "frontend/app-core.js",
+      "source_symbol": "ICONS.pencil",
+      "source_sha256": "85eb20431f99b7b3818755d65dbc88575893d3bcd38f1f1f96271122fc75b1fa",
+      "occurrences": 1,
+      "variants": [
+        {
+          "svg_sha256": "6817b03c500442701bae1595f57f21620d6e89104f919ab2530f5a2fd225b4df",
+          "display_attributes": {}
+        }
+      ]
+    },
+    {
+      "id": 31,
+      "label": "删除",
+      "file": "frontend/pages/notepad.html",
+      "kind": "reuse-reviewed-project-drawing",
+      "source_file": "frontend/app-core.js",
+      "source_symbol": "ICONS.trash",
+      "source_sha256": "f5cb87d47bdca85a097c87183a81c8e6bf86be96b5c7dc0a4d47d431371ac1fd",
+      "occurrences": 2,
+      "variants": [
+        {
+          "svg_sha256": "4382daf701a81d0d7533b11c7bf7282aacdb9a98f99c7b3275b2a6f459cf6515",
+          "display_attributes": {}
+        },
+        {
+          "svg_sha256": "4382daf701a81d0d7533b11c7bf7282aacdb9a98f99c7b3275b2a6f459cf6515",
+          "display_attributes": {}
+        }
+      ]
+    },
+    {
+      "id": 36,
+      "label": "搜索",
+      "file": "frontend/pages/notepad.html",
+      "kind": "reuse-reviewed-project-drawing",
+      "source_file": "frontend/icons/reviewed-remaining/_ARR_ICONS-search.svg",
+      "source_symbol": null,
+      "source_sha256": "6ca280b2bbefa85bdb2e550cd1d1704b62f616510d0acf5bb131b3f915a727d4",
+      "occurrences": 1,
+      "variants": [
+        {
+          "svg_sha256": "14307b91499dc42819a353fa34b2232b4804c89202e88e6c551103c326d62189",
+          "display_attributes": {}
+        }
+      ]
+    },
+    {
+      "id": 37,
+      "label": "文件夹",
+      "file": "frontend/pages/notepad.html",
+      "kind": "reuse-reviewed-project-drawing",
+      "source_file": "frontend/app-core.js",
+      "source_symbol": "ICONS.folder",
+      "source_sha256": "ea91e3d90f6c50589943bd0df583aa3d016a5ffa4a30a28820f690aa379ca6b2",
+      "occurrences": 1,
+      "variants": [
+        {
+          "svg_sha256": "3dfff8e6bd41f0adb400125e3b207f56dc2da77e4cf4f0783bb8ce6ca654808b",
+          "display_attributes": {}
+        }
+      ]
+    },
+    {
+      "id": 38,
+      "label": "全部文件",
+      "file": "frontend/pages/notepad.html",
+      "kind": "reuse-reviewed-project-drawing",
+      "source_file": "frontend/app-core.js",
+      "source_symbol": "ICONS.folder",
+      "source_sha256": "ea91e3d90f6c50589943bd0df583aa3d016a5ffa4a30a28820f690aa379ca6b2",
+      "occurrences": 1,
+      "variants": [
+        {
+          "svg_sha256": "aeb9846b55b3ff7b05790f6c84f462e506a78fc479d8f1c2064c00b70d6fd707",
+          "display_attributes": {}
+        }
+      ]
+    },
+    {
+      "id": 39,
+      "label": "侧栏",
+      "file": "frontend/pages/file-browser.html",
+      "kind": "reuse-reviewed-project-drawing",
+      "source_file": "frontend/app-core.js",
+      "source_symbol": "ICONS.sidebar",
+      "source_sha256": "f6b9bb632f554c9b90a953743ef00d09126cabb1a92c6e2d794a833eb174fa82",
+      "occurrences": 1,
+      "variants": [
+        {
+          "svg_sha256": "a27a2e8cd85e6d224b16afa07deec99b0efd5ba047cea032a41b7d0ddc303a2d",
+          "display_attributes": {}
+        }
+      ]
+    },
+    {
+      "id": 40,
+      "label": "操作菜单",
+      "file": "frontend/pages/file-browser.html",
+      "kind": "reuse-reviewed-project-drawing",
+      "source_file": "frontend/icons/reviewed-remaining/_ARR_ICONS-down.svg",
+      "source_symbol": null,
+      "source_sha256": "d0b3ba8b1ee123a240e508c0a900900c28402547d92c43e47bb4081c1bf7f184",
+      "occurrences": 1,
+      "variants": [
+        {
+          "svg_sha256": "b88a24a6f2f92f73398bc260aa2d7997ffc5984b3d4c1f3d1b7ae6e7c9d52451",
+          "display_attributes": {}
+        }
+      ]
+    },
+    {
+      "id": 41,
+      "label": "目录角标",
+      "file": "frontend/pages/file-browser.html",
+      "kind": "reuse-reviewed-project-drawing",
+      "source_file": "frontend/app-core.js",
+      "source_symbol": "ICONS.enter",
+      "source_sha256": "fe5b5d4cb5b8c62e07beb38c712adac1c0b3aa8d6f58e2b76a488afd75983db2",
+      "occurrences": 1,
+      "variants": [
+        {
+          "svg_sha256": "44b7dc489410bc1b048d7c39c27cc6ddc3aef7590827fa92684b0e2e1f7b46f0",
+          "display_attributes": {}
+        }
+      ]
+    },
+    {
+      "id": 42,
+      "label": "另存为",
+      "file": "frontend/pages/file-browser.html",
+      "kind": "new-semantic-construction-32-grid",
+      "source_file": "frontend/icons/reviewed-scattered/42-save-as.svg",
+      "source_symbol": null,
+      "source_sha256": "9194f3117569736e7e2947d94c9eff86a5826262edec081bdcd0adad8b5d72bf",
+      "occurrences": 1,
+      "variants": [
+        {
+          "svg_sha256": "3a1a3b471b432360d3bb13f7cfede94a6319e8198bc05104f24e4659d150a4ff",
+          "display_attributes": {}
+        }
+      ]
+    },
+    {
+      "id": 43,
+      "label": "搜索",
+      "file": "frontend/pages/files.html",
+      "kind": "reuse-reviewed-project-drawing",
+      "source_file": "frontend/icons/reviewed-remaining/_ARR_ICONS-search.svg",
+      "source_symbol": null,
+      "source_sha256": "6ca280b2bbefa85bdb2e550cd1d1704b62f616510d0acf5bb131b3f915a727d4",
+      "occurrences": 1,
+      "variants": [
+        {
+          "svg_sha256": "3dce4d65c5ebd73061d2223a33ee13e639f75be7fadec0e03d9ec4adb032667a",
+          "display_attributes": {
+            "id": "search-icon"
+          }
+        }
+      ]
+    },
+    {
+      "id": 44,
+      "label": "目录入口",
+      "file": "frontend/pages/files.html",
+      "kind": "reuse-reviewed-project-drawing",
+      "source_file": "frontend/app-core.js",
+      "source_symbol": "ICONS.sidebar",
+      "source_sha256": "f6b9bb632f554c9b90a953743ef00d09126cabb1a92c6e2d794a833eb174fa82",
+      "occurrences": 1,
+      "variants": [
+        {
+          "svg_sha256": "80f0d58a3ab30a56b613339db2f55cc264f6d2ad7b5ead97e9efb7cd7ecff086",
+          "display_attributes": {
+            "width": "17",
+            "height": "17"
+          }
+        }
+      ]
+    },
+    {
+      "id": 45,
+      "label": "指标看板",
+      "file": "frontend/app-assets-apps.js",
+      "kind": "reuse-reviewed-project-drawing",
+      "source_file": "frontend/app-core.js",
+      "source_symbol": "ICONS.chart",
+      "source_sha256": "9ddab1ff1f4a4164194e610911c355235111c77c8ce05e6853607bd1d5314226",
+      "occurrences": 1,
+      "variants": [
+        {
+          "svg_sha256": "e31dc4be135c66e1fb72098f94437b0d673b64b2a1cdbd69c216048f6db82c1d",
+          "display_attributes": {
+            "x": "8",
+            "y": "8",
+            "width": "32",
+            "height": "32"
+          }
+        }
+      ]
+    }
+  ],
+  "paused_tiles": [],
+  "adopted_tiles": [
+    {
+      "name": "tasknote",
+      "revision": "V3-warm-white-red-checks",
+      "source_file": "frontend/icons/reviewed-scattered/01-tasknote-v3.svg",
+      "source_sha256": "581834a510cc69f4d6400500742f476dabf4af50d0887b9fc7d5b1328aad12e8",
+      "runtime_file": "frontend/app-assets-apps.js",
+      "runtime_symbol": "_TASKNOTE_REVIEWED_SVG",
+      "adopted_on": "2026-10-27",
+      "provenance": "User-approved AI-assisted project artwork; no external SVG embedded"
+    },
+    {
+      "name": "便笺",
+      "revision": "V19-no-lines-warm-white-paper-warm-gray-fold",
+      "source_file": "frontend/icons/reviewed-scattered/02-note-v19.svg",
+      "source_sha256": "9cad8c19662202ab78c45ede87445b25628b5c73768db205c8bbf73202723e95",
+      "runtime_file": "frontend/app-assets-apps.js",
+      "runtime_symbol": "_NOTE_REVIEWED_SVG",
+      "adopted_on": "2026-10-27",
+      "provenance": "User-approved AI-assisted project artwork; no external SVG embedded"
+    }
+  ]
+}

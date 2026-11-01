@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">  <!-- 没有这一条,手机上顶层打开这一页会按 980px 排版,窄屏的媒体查询根本不匹配 -->
+<title>Excalidraw</title>
+<link rel="stylesheet" href="/app-assets/excalidraw/vendor/index.css">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body, #app { height: 100%; width: 100%; }
+  body { overflow: hidden; background: var(--default-bg-color, #121212); }
+  .excalidraw .cv-trigger .cv-trigger-t {
+    max-width: 130px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    font-size: .82rem; margin-left: .4rem;
+  }
+  /* 画布列表:沿用 Excalidraw 自己的变量,和原生侧边栏同一套配色 */
+  .cv-wrap { display: flex; flex-direction: column; height: 100%; min-height: 0; padding: 0 .5rem .5rem; }
+  .cv-new {
+    flex: none; display: flex; align-items: center; gap: .45rem; width: 100%;
+    margin-bottom: .5rem; padding: .5rem .65rem; border: 0; border-radius: .6rem; cursor: pointer;
+    background: var(--color-primary); color: var(--island-bg-color);
+    font-size: .82rem; font-family: inherit;
+  }
+  .cv-new:hover { background: var(--color-primary-darker); }
+  .cv-list { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 2px; }
+  .cv-item {
+    display: flex; align-items: center; gap: .3rem; padding: .45rem .55rem;
+    border-radius: .5rem; cursor: pointer; color: var(--text-primary-color);
+  }
+  .cv-item:hover { background: var(--button-hover-bg, rgba(0,0,0,.06)); }
+  .cv-item.on { background: var(--color-primary-light); }
+  .cv-main { flex: 1; min-width: 0; }
+  .cv-name { font-size: .84rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .cv-meta { font-size: .72rem; opacity: .55; margin-top: 1px; }
+  .cv-input {
+    width: 100%; font: inherit; font-size: .84rem; color: inherit;
+    background: var(--input-bg-color, rgba(0,0,0,.15)); border: 1px solid var(--color-primary);
+    border-radius: .35rem; padding: 1px 4px;
+  }
+  .cv-ops { display: none; gap: 1px; }
+  .cv-item:hover .cv-ops { display: flex; }
+  .cv-ops button {
+    display: grid; place-items: center; width: 22px; height: 22px; padding: 0; cursor: pointer;
+    border: 0; border-radius: .35rem; background: transparent; color: inherit; opacity: .6;
+  }
+  .cv-ops button:hover { opacity: 1; background: var(--button-hover-bg, rgba(0,0,0,.1)); }
+  /* Excalidraw 的手机工具组实际宽约 495px，却在 390px 顶栏里居中，结果左右各裁一截。
+     让承载 section 收进视口并横向滚动：默认先看见最左边的选择/基础图形，后面的工具可滑到。 */
+  @media (max-width: 820px), (max-height: 520px) and (pointer: coarse) {
+    html, body, #app { height: 100dvh; }
+    .excalidraw--mobile .App-top-bar > section {
+      width: 100% !important; min-width: 0 !important; overflow-x: auto !important;
+      overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch; scrollbar-width: none;
+    }
+    .excalidraw--mobile .App-top-bar > section::-webkit-scrollbar { display: none; }
+    .excalidraw--mobile .App-top-bar > section > .Stack { width: max-content !important; }
+    /* 触屏没有可靠 hover；画布列表里的重命名/复制/删除必须直接可见且可点。 */
+    .cv-item { min-height: 44px; }
+    .cv-ops { display: flex; }
+    .cv-ops button { width: 32px; height: 32px; }
+    /* 不改画布文字编辑器的字号与定位，只抬高应用 chrome 的表单，阻止 iOS 聚焦缩放。 */
+    input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not(.excalidraw-wysiwyg),
+    textarea:not(.excalidraw-wysiwyg), select,
+    [contenteditable]:not([contenteditable="false"]) { font-size: 16px !important; }
+    .cv-input { min-height: 40px; }
+  }
+</style>
+</head>
+<body>
+  <div id="app"></div>
+  <script>window.EXCALIDRAW_ASSET_PATH = "/app-assets/excalidraw/vendor/";</script>
+  <script src="/app-assets/excalidraw/vendor/app.bundle.js"></script>
+</body>
+</html>

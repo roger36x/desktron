@@ -1,0 +1,14 @@
+{
+  "name": "monaco-ide",
+  "version": "minimal-code-v7-bold-5.4-shadowless",
+  "license": "Apache-2.0",
+  "construction": "Project-authored code-symbol paths and placement unchanged from V3; stroke width increased from 4.4 to 5.4 (22.7%) by user request; white _AP_SQUIRCLE background, gray brackets (#808080), orange-red slash (#F26A3D); no embedded shadow.",
+  "size": [
+    512,
+    512
+  ],
+  "files": {
+    "frontend/icons/app-monaco-ide-original-00700ed9f4c1.svg": "fc3fa8fb470dca2cb5c994806c9c149455f9d0e6945d631a3d6bc78ca205fe81",
+    "frontend/icons/app-monaco-ide-original-00700ed9f4c1.png": "00700ed9f4c1e9e20f625b90f2e93075369677907fc15ebeaab7b0d17d24779a"
+  }
+}

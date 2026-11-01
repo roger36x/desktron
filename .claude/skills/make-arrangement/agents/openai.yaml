@@ -1,0 +1,4 @@
+interface:
+  display_name: "创建安排"
+  short_description: "通过对话确认执行内容和触发时间并创建 Desk 安排"
+  default_prompt: "帮我确认要做什么和何时执行，然后创建一个安排。"

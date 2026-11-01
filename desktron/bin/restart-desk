@@ -1,0 +1,94 @@
+#!/usr/bin/env python3
+"""Request a host-supervised Desk backend restart.
+
+The native shell owns the backend lifecycle.  This command never kills a PID,
+launches an app, creates a launchd job, drains conversations, or rebuilds RC.
+`--detach` remains accepted so existing operator instructions stay compatible;
+the request itself is a short local HTTP transaction.
+"""
+import json
+import secrets
+import sys
+import urllib.error
+import urllib.request
+
+PORT = 7765
+BASE = "http://127.0.0.1:%d" % PORT
+
+
+def request(path, body=None, timeout=10):
+    data = None if body is None else json.dumps(body).encode()
+    req = urllib.request.Request(BASE + path, data=data,
+        method="GET" if data is None else "POST",
+        headers={"Content-Type": "application/json", "X-Desktron-Orchestrator": "deploy"})
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as response:
+            return json.load(response)
+    except urllib.error.HTTPError as exc:
+        try:
+            value = json.loads(exc.read().decode() or "{}")
+        except Exception:
+            value = {"error": "HTTP %d" % exc.code}
+        return {"ok": False, **value}
+
+
+def main(argv=None):
+    args = list(sys.argv[1:] if argv is None else argv)
+    expected = {}
+    remaining = []
+    flags = {"--expected-boot-id": "boot_id", "--expected-host-instance-id": "host_instance_id"}
+    index = 0
+    while index < len(args):
+        item = args[index]
+        if item in flags:
+            if (index + 1 >= len(args) or args[index + 1].startswith("--")
+                    or not args[index + 1] or flags[item] in expected):
+                print("预期身份参数缺失或重复。", file=sys.stderr)
+                return 2
+            expected[flags[item]] = args[index + 1]
+            index += 2
+        elif item in ("--yes", "--detach"):
+            remaining.append(item)
+            index += 1
+        else:
+            print("未知参数；请检查重启命令。", file=sys.stderr)
+            return 2
+    args = remaining
+    before = request("/workbench/runtime")
+    if any(before.get(key) != value for key, value in expected.items()):
+        print("拒绝：当前后端身份与调用方验收身份不一致；未提交重启。", file=sys.stderr)
+        return 1
+    if not args or "--yes" not in args:
+        print("预演：请求原生宿主重启当前后端；不退出 App，不等待会话排空，不重建 RC。")
+        print("当前 boot=%s supervised=%s" % (before.get("boot_id") or "未知",
+                                               bool(before.get("supervised"))))
+        print("执行请加 --yes；--detach 为兼容参数，可保留。")
+        return 0
+    if not before.get("supervised"):
+        print("拒绝：当前后端不由新版原生宿主监督。先从 Desk 外安装并启动新版 Desktron.app。",
+              file=sys.stderr)
+        return 1
+    operation = secrets.token_hex(16)
+    result = request("/workbench/restart", {"operation_id": operation,
+        "expected_boot_id": before.get("boot_id")}, timeout=12)
+    if not result.get("ok"):
+        state = result.get("state") or "rejected"
+        detail = result.get("error") or state or "请求失败"
+        blockers = result.get("blockers") or []
+        if blockers:
+            detail += "：" + json.dumps(blockers, ensure_ascii=False)
+        prefix = "重启状态未知" if state in ("unknown", "restart_error") else "重启未提交"
+        print(prefix + "：" + detail, file=sys.stderr)
+        return 1
+    # The caller can itself be a Writer owned by the backend being stopped.
+    # Return after durable host acceptance; waiting for the new boot here would
+    # make success depend on that soon-to-be-cancelled caller surviving.
+    print(json.dumps({"ok": True, "state": result.get("state"),
+                      "operation_id": operation,
+                      "old_boot_id": before.get("boot_id"),
+                      "host_instance_id": before.get("host_instance_id")}, ensure_ascii=False))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

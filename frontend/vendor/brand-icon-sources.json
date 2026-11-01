@@ -1,0 +1,41 @@
+{
+  "schema": 1,
+  "matched": [],
+  "project_created": [
+    "BRAND_ICONS.claude",
+    "BRAND_ICONS.codex"
+  ],
+  "manifest": "original-inline-icon-manifest.json",
+  "replaced": "The former Claude Simple Icons path and Codex knot path have been replaced by project-created A/C identifiers with 24 slanted short strokes. Stored Simple Icons license texts describe the retired source only, not the current drawings.",
+  "unchanged": {
+    "BRAND_ICONS.pi": "existing monochrome rectangle adaptation retained; exact 4x4 occupancy correspondence to Pi Coding Agent 1.2.0 source recorded in geometry_correspondence; MIT notice supplied, trademark rights not granted",
+    "BRAND_ICONS.shepherd": "existing project-created graphic retained"
+  },
+  "trademarks": "Project-created drawings do not grant third-party trademark rights or imply endorsement.",
+  "geometry_correspondence": [
+    {
+      "symbol": "BRAND_ICONS.pi",
+      "file": "frontend/app-events.js",
+      "upstream": "@earendil-works/pi-coding-agent@1.2.0",
+      "repository": "https://github.com/earendil-works/pi",
+      "tag": "v1.2.0",
+      "commit": "06a466935536f8c9bcacb2d5efc0fc021be1bdff",
+      "upstream_file": "packages/coding-agent/src/modes/interactive/components/pi-logo.ts",
+      "upstream_source_sha256": "bbf3b354e774466a1a4df545d66ed929c0834ab1b469cd84c0362c567ffc5618",
+      "match_type": "exact 4x4 occupancy geometry; not SVG/path/byte identity",
+      "occupancy": [
+        "###.",
+        "#.#.",
+        "##.#",
+        "#..#"
+      ],
+      "adaptation": "Seven merged rectangles, monochrome currentColor, cell size 3.5, origin (5,5) in a 24-grid SVG; existing rendering unchanged.",
+      "svg_sha256": "a6b4bd242c012a78f9565395c183cd00538a55033579a61265342f5dac4b1b94",
+      "license": "MIT",
+      "license_file": "licenses/pi-1.2.0-LICENSE.txt",
+      "license_sha256": "0457f5bcec3b3b211605dfb5d1a49042fd638f3686a410fe099c24a25af13c48",
+      "license_source": "https://github.com/earendil-works/pi/blob/06a466935536f8c9bcacb2d5efc0fc021be1bdff/LICENSE",
+      "limits": "Copyright notice for upstream source is supplied. No trademark permission or endorsement is asserted; no independent brand policy was identified in the checked repository file names or root README/CONTRIBUTING/LICENSE."
+    }
+  ]
+}

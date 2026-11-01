@@ -1,0 +1,1589 @@
+{
+  "_comment": "工作区目录：发行版资产。应用二分：agentic（调模型）/非（本地页面）。agentic 应用声明式 schema(5W):who=角色定位，what=产出规范，how=执行步骤，when=触发（manual/scheduled/event）,where=范围约束（含 ${param} 占位）;params=占位的表单声明（name/label/required/default/enum）。执行=params 填占位→五段组装发 agent。旧 prompt 字段兼容（存在即走旧路径）。desktopApps 是随 Desktron 发行的官方应用唯一清单，不经外部 content 仓；用户自建与第三方应用继续落运行态注册表。",
+  "role": "sre-bp",
+  "domains": [],
+  "hostApps": [
+    {
+      "id": "desk",
+      "label": "Desktron",
+      "agent_operability": "L2",
+      "agent_control": {
+        "protocol": "desk.app-control/v1alpha1",
+        "identity": {
+          "app": "com.desktron.desktop",
+          "version": "1",
+          "adapter": "desk-surface/v1"
+        },
+        "level": "L2",
+        "resources": [
+          {
+            "type": "desk-surface",
+            "scope": "delegated-current-surface"
+          }
+        ],
+        "observations": [
+          {
+            "name": "surface",
+            "schema": "desk.surface/v1",
+            "redaction": "desk-protected",
+            "input_schema": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {}
+            }
+          },
+          {
+            "name": "screenshot",
+            "schema": "desk.image/v1",
+            "redaction": "desk-protected",
+            "sensitive": true,
+            "input_schema": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "full_page": {
+                  "type": "boolean"
+                },
+                "clip": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "x",
+                    "y",
+                    "width",
+                    "height"
+                  ],
+                  "properties": {
+                    "x": {
+                      "type": "number",
+                      "minimum": 0
+                    },
+                    "y": {
+                      "type": "number",
+                      "minimum": 0
+                    },
+                    "width": {
+                      "type": "number",
+                      "minimum": 1,
+                      "maximum": 12000
+                    },
+                    "height": {
+                      "type": "number",
+                      "minimum": 1,
+                      "maximum": 12000
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ],
+        "actions": [
+          {
+            "name": "open_page",
+            "effect": "reversible_write",
+            "approval": "never",
+            "timeout_ms": 5000,
+            "idempotency": "keyed",
+            "input_schema": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "page"
+              ],
+              "properties": {
+                "page": {
+                  "type": "string",
+                  "enum": [
+                    "arrangements",
+                    "apps",
+                    "agents"
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "name": "toggle_panel",
+            "effect": "reversible_write",
+            "approval": "never",
+            "timeout_ms": 3000,
+            "idempotency": "keyed",
+            "input_schema": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "open"
+              ],
+              "properties": {
+                "open": {
+                  "type": "boolean"
+                }
+              }
+            }
+          }
+        ],
+        "permissions": {
+          "delegation": "explicit",
+          "lease": "exclusive",
+          "user_interaction": "pause",
+          "takeover": "user_confirmed"
+        },
+        "events": [
+          "ready",
+          "changed",
+          "action_completed",
+          "failed",
+          "waiting_user",
+          "lease_revoked"
+        ],
+        "receipts": {
+          "required": true,
+          "undo_when_declared": true
+        }
+      },
+      "targets": [
+        "_desktop"
+      ],
+      "uid": "desktron.desk.0001"
+    }
+  ],
+  "desktopApps": [
+    {
+      "id": "notepad",
+      "label": "备忘录",
+      "desc": "macOS 备忘录风格的三栏笔记：文件夹、时间分组列表、自动保存，数据存本地",
+      "icon": "pen-line",
+      "agentic": false,
+      "page": "notepad",
+      "agent_operability": "none",
+      "agent_operability_reason": "尚未提供结构化笔记观察与编辑 adapter",
+      "targets": [
+        "_desktop"
+      ],
+      "uid": "desktron.notepad.2db9f4"
+    },
+    {
+      "id": "excalidraw",
+      "label": "Excalidraw",
+      "desc": "内嵌 Excalidraw 画板",
+      "icon": "layers",
+      "agentic": false,
+      "page": "excalidraw",
+      "agent_operability": "none",
+      "agent_operability_reason": "尚未提供画布节点观察与编辑 adapter",
+      "targets": [
+        "_desktop"
+      ],
+      "uid": "desktron.excalidraw.be284"
+    },
+    {
+      "id": "shell",
+      "label": "终端",
+      "desc": "本机 shell，与工作区使用同一个目录",
+      "icon": "/icons/app-terminal-3b65e9edf830.png",
+      "agentic": false,
+      "page": "shell",
+      "agent_operability": "none",
+      "agent_operability_reason": "终端由引擎工具直接操作，尚未接入 App Control Runtime",
+      "targets": [
+        "_desktop"
+      ],
+      "uid": "desktron.shell.0001"
+    },
+    {
+      "id": "browser",
+      "label": "浏览器",
+      "desc": "内置浏览器，网页在应用内以标签并列，带地址栏与前进后退",
+      "agentic": false,
+      "page": "browser",
+      "file_open": {
+        "handler": "browser",
+        "accept": [
+          "html",
+          "htm",
+          "svg",
+          "pdf",
+          "png",
+          "jpg",
+          "jpeg",
+          "gif",
+          "webp",
+          "bmp",
+          "ico"
+        ]
+      },
+      "agent_operability": "L3",
+      "agent_control": {
+        "protocol": "desk.app-control/v1alpha1",
+        "identity": {
+          "app": "com.desktron.browser",
+          "version": "1",
+          "adapter": "desk-browser/v1"
+        },
+        "level": "L3",
+        "resources": [
+          {
+            "type": "tab",
+            "scope": "delegated-visible-tab"
+          },
+          {
+            "type": "agent-tab",
+            "scope": "agent-owned-isolated-tab"
+          },
+          {
+            "type": "granted-tab",
+            "scope": "agent-owned-identified-tab"
+          }
+        ],
+        "observations": [
+          {
+            "name": "document",
+            "schema": "desk.browser.document/v1",
+            "redaction": "browser-safe",
+            "input_schema": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "find": {
+                  "type": "string"
+                },
+                "root_node_id": {
+                  "type": "string"
+                },
+                "max_nodes": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 2000
+                },
+                "include_offscreen": {
+                  "type": "boolean"
+                }
+              }
+            }
+          },
+          {
+            "name": "screenshot",
+            "schema": "desk.image/v1",
+            "redaction": "visible-sensitive-elements",
+            "sensitive": true,
+            "input_schema": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "full_page": {
+                  "type": "boolean"
+                },
+                "clip": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "x",
+                    "y",
+                    "width",
+                    "height"
+                  ],
+                  "properties": {
+                    "x": {
+                      "type": "number",
+                      "minimum": 0
+                    },
+                    "y": {
+                      "type": "number",
+                      "minimum": 0
+                    },
+                    "width": {
+                      "type": "number",
+                      "minimum": 1,
+                      "maximum": 12000
+                    },
+                    "height": {
+                      "type": "number",
+                      "minimum": 1,
+                      "maximum": 12000
+                    }
+                  }
+                }
+              }
+            }
+          },
+          {
+            "name": "network",
+            "schema": "desk.browser.network/v1",
+            "redaction": "origin-path-only",
+            "input_schema": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "limit": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 1000
+                },
+                "since_ms": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "initiator": {
+                  "type": "string"
+                },
+                "url_contains": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        ],
+        "actions": [
+          {
+            "name": "open",
+            "effect": "read_only",
+            "approval": "risk_based",
+            "timeout_ms": 20000,
+            "idempotency": "none",
+            "input_schema": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "url"
+              ],
+              "properties": {
+                "url": {
+                  "type": "string"
+                },
+                "isolated": {
+                  "type": "boolean"
+                },
+                "origin": {
+                  "type": "string"
+                },
+                "allowed_main_frame_hosts": {
+                  "type": "array",
+                  "maxItems": 8,
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          {
+            "name": "navigate",
+            "effect": "read_only",
+            "approval": "risk_based",
+            "timeout_ms": 15000,
+            "idempotency": "keyed",
+            "input_schema": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "url"
+              ],
+              "properties": {
+                "url": {
+                  "type": "string"
+                },
+                "wait_for": {
+                  "type": "object",
+                  "description": "动作后置条件，与 wait 的 input_schema 相同；Runtime 严格校验，超时不重放动作。"
+                }
+              }
+            }
+          },
+          {
+            "name": "fill",
+            "effect": "reversible_write",
+            "approval": "risk_based",
+            "timeout_ms": 5000,
+            "idempotency": "keyed",
+            "input_schema": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "value"
+              ],
+              "properties": {
+                "node_id": {
+                  "type": "string"
+                },
+                "selector": {
+                  "type": "string"
+                },
+                "locator": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "selector": {
+                      "type": "string"
+                    },
+                    "role": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "text": {
+                      "type": "string"
+                    },
+                    "test_id": {
+                      "type": "string"
+                    },
+                    "exact": {
+                      "type": "boolean"
+                    },
+                    "nth": {
+                      "type": "integer"
+                    }
+                  }
+                },
+                "timeout_ms": {
+                  "type": "integer",
+                  "minimum": 100,
+                  "maximum": 60000
+                },
+                "value": {
+                  "type": "string"
+                },
+                "wait_for": {
+                  "type": "object",
+                  "description": "动作后置条件，与 wait 的 input_schema 相同；Runtime 严格校验，超时不重放动作。"
+                }
+              }
+            }
+          },
+          {
+            "name": "select",
+            "effect": "reversible_write",
+            "approval": "risk_based",
+            "timeout_ms": 5000,
+            "idempotency": "keyed",
+            "input_schema": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "node_id": {
+                  "type": "string"
+                },
+                "selector": {
+                  "type": "string"
+                },
+                "locator": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "selector": {
+                      "type": "string"
+                    },
+                    "role": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "text": {
+                      "type": "string"
+                    },
+                    "test_id": {
+                      "type": "string"
+                    },
+                    "exact": {
+                      "type": "boolean"
+                    },
+                    "nth": {
+                      "type": "integer"
+                    }
+                  }
+                },
+                "timeout_ms": {
+                  "type": "integer",
+                  "minimum": 100,
+                  "maximum": 60000
+                },
+                "value": {
+                  "type": "string"
+                },
+                "values": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "wait_for": {
+                  "type": "object",
+                  "description": "动作后置条件，与 wait 的 input_schema 相同；Runtime 严格校验，超时不重放动作。"
+                }
+              }
+            }
+          },
+          {
+            "name": "scroll",
+            "effect": "read_only",
+            "approval": "never",
+            "timeout_ms": 5000,
+            "idempotency": "none",
+            "input_schema": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "node_id": {
+                  "type": "string"
+                },
+                "selector": {
+                  "type": "string"
+                },
+                "locator": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "selector": {
+                      "type": "string"
+                    },
+                    "role": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "text": {
+                      "type": "string"
+                    },
+                    "test_id": {
+                      "type": "string"
+                    },
+                    "exact": {
+                      "type": "boolean"
+                    },
+                    "nth": {
+                      "type": "integer"
+                    }
+                  }
+                },
+                "timeout_ms": {
+                  "type": "integer",
+                  "minimum": 100,
+                  "maximum": 60000
+                },
+                "x": {
+                  "type": "number"
+                },
+                "y": {
+                  "type": "number"
+                }
+              }
+            }
+          },
+          {
+            "name": "wait",
+            "effect": "read_only",
+            "approval": "never",
+            "timeout_ms": 15000,
+            "idempotency": "none",
+            "input_schema": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "milliseconds": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 10000
+                },
+                "text": {
+                  "type": "string"
+                },
+                "selector": {
+                  "type": "string"
+                },
+                "locator": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "selector": {
+                      "type": "string"
+                    },
+                    "role": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "text": {
+                      "type": "string"
+                    },
+                    "test_id": {
+                      "type": "string"
+                    },
+                    "exact": {
+                      "type": "boolean"
+                    },
+                    "nth": {
+                      "type": "integer"
+                    }
+                  }
+                },
+                "state": {
+                  "type": "string",
+                  "enum": [
+                    "attached",
+                    "detached",
+                    "visible",
+                    "hidden",
+                    "enabled",
+                    "disabled",
+                    "checked",
+                    "unchecked",
+                    "mixed"
+                  ]
+                },
+                "value": {
+                  "type": "string"
+                },
+                "values": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "url": {
+                  "type": "string"
+                },
+                "url_mode": {
+                  "type": "string",
+                  "enum": [
+                    "equals",
+                    "contains",
+                    "prefix"
+                  ]
+                },
+                "network_idle": {
+                  "type": "boolean"
+                },
+                "timeout_ms": {
+                  "type": "integer",
+                  "minimum": 100,
+                  "maximum": 1800000
+                },
+                "guard_url": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "abort_if": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          },
+          {
+            "name": "back",
+            "effect": "read_only",
+            "approval": "never",
+            "timeout_ms": 15000,
+            "idempotency": "keyed",
+            "input_schema": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "wait_for": {
+                  "type": "object",
+                  "description": "动作后置条件，与 wait 的 input_schema 相同；Runtime 严格校验，超时不重放动作。"
+                }
+              }
+            }
+          },
+          {
+            "name": "forward",
+            "effect": "read_only",
+            "approval": "never",
+            "timeout_ms": 15000,
+            "idempotency": "keyed",
+            "input_schema": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "wait_for": {
+                  "type": "object",
+                  "description": "动作后置条件，与 wait 的 input_schema 相同；Runtime 严格校验，超时不重放动作。"
+                }
+              }
+            }
+          },
+          {
+            "name": "reload",
+            "effect": "read_only",
+            "approval": "never",
+            "timeout_ms": 15000,
+            "idempotency": "keyed",
+            "input_schema": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "wait_for": {
+                  "type": "object",
+                  "description": "动作后置条件，与 wait 的 input_schema 相同；Runtime 严格校验，超时不重放动作。"
+                }
+              }
+            }
+          },
+          {
+            "name": "activate",
+            "effect": "reversible_write",
+            "approval": "risk_based",
+            "timeout_ms": 5000,
+            "idempotency": "none",
+            "input_schema": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {}
+            }
+          },
+          {
+            "name": "handoff",
+            "effect": "reversible_write",
+            "approval": "always",
+            "timeout_ms": 5000,
+            "idempotency": "required",
+            "input_schema": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {}
+            }
+          },
+          {
+            "name": "close",
+            "effect": "destructive",
+            "approval": "always",
+            "timeout_ms": 5000,
+            "idempotency": "required",
+            "input_schema": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {}
+            }
+          },
+          {
+            "name": "coordinate_click",
+            "effect": "external_write",
+            "approval": "always",
+            "timeout_ms": 10000,
+            "idempotency": "required",
+            "preconditions": [
+              "fresh_document_observation",
+              "coordinates_inside_viewport"
+            ],
+            "input_schema": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "x",
+                "y"
+              ],
+              "properties": {
+                "x": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "y": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "wait_for": {
+                  "type": "object",
+                  "description": "动作后置条件，与 wait 的 input_schema 相同；Runtime 严格校验，超时不重放动作。"
+                }
+              }
+            }
+          },
+          {
+            "name": "dblclick",
+            "effect": "external_write",
+            "approval": "always",
+            "timeout_ms": 10000,
+            "idempotency": "required",
+            "input_schema": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "node_id": {
+                  "type": "string"
+                },
+                "selector": {
+                  "type": "string"
+                },
+                "locator": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "selector": {
+                      "type": "string"
+                    },
+                    "role": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "text": {
+                      "type": "string"
+                    },
+                    "test_id": {
+                      "type": "string"
+                    },
+                    "exact": {
+                      "type": "boolean"
+                    },
+                    "nth": {
+                      "type": "integer"
+                    }
+                  }
+                },
+                "timeout_ms": {
+                  "type": "integer",
+                  "minimum": 100,
+                  "maximum": 60000
+                },
+                "wait_for": {
+                  "type": "object",
+                  "description": "动作后置条件，与 wait 的 input_schema 相同；Runtime 严格校验，超时不重放动作。"
+                }
+              }
+            }
+          },
+          {
+            "name": "check",
+            "effect": "external_write",
+            "approval": "always",
+            "timeout_ms": 10000,
+            "idempotency": "required",
+            "input_schema": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "node_id": {
+                  "type": "string"
+                },
+                "selector": {
+                  "type": "string"
+                },
+                "locator": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "selector": {
+                      "type": "string"
+                    },
+                    "role": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "text": {
+                      "type": "string"
+                    },
+                    "test_id": {
+                      "type": "string"
+                    },
+                    "exact": {
+                      "type": "boolean"
+                    },
+                    "nth": {
+                      "type": "integer"
+                    }
+                  }
+                },
+                "timeout_ms": {
+                  "type": "integer",
+                  "minimum": 100,
+                  "maximum": 60000
+                },
+                "wait_for": {
+                  "type": "object",
+                  "description": "动作后置条件，与 wait 的 input_schema 相同；Runtime 严格校验，超时不重放动作。"
+                }
+              }
+            }
+          },
+          {
+            "name": "uncheck",
+            "effect": "external_write",
+            "approval": "always",
+            "timeout_ms": 10000,
+            "idempotency": "required",
+            "input_schema": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "node_id": {
+                  "type": "string"
+                },
+                "selector": {
+                  "type": "string"
+                },
+                "locator": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "selector": {
+                      "type": "string"
+                    },
+                    "role": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "text": {
+                      "type": "string"
+                    },
+                    "test_id": {
+                      "type": "string"
+                    },
+                    "exact": {
+                      "type": "boolean"
+                    },
+                    "nth": {
+                      "type": "integer"
+                    }
+                  }
+                },
+                "timeout_ms": {
+                  "type": "integer",
+                  "minimum": 100,
+                  "maximum": 60000
+                },
+                "wait_for": {
+                  "type": "object",
+                  "description": "动作后置条件，与 wait 的 input_schema 相同；Runtime 严格校验，超时不重放动作。"
+                }
+              }
+            }
+          },
+          {
+            "name": "drag",
+            "effect": "external_write",
+            "approval": "always",
+            "timeout_ms": 15000,
+            "idempotency": "required",
+            "input_schema": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "source",
+                "target"
+              ],
+              "properties": {
+                "source": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "node_id": {
+                      "type": "string"
+                    },
+                    "selector": {
+                      "type": "string"
+                    },
+                    "locator": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "selector": {
+                          "type": "string"
+                        },
+                        "role": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "text": {
+                          "type": "string"
+                        },
+                        "test_id": {
+                          "type": "string"
+                        },
+                        "exact": {
+                          "type": "boolean"
+                        },
+                        "nth": {
+                          "type": "integer"
+                        }
+                      }
+                    },
+                    "timeout_ms": {
+                      "type": "integer",
+                      "minimum": 100,
+                      "maximum": 60000
+                    }
+                  }
+                },
+                "target": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "node_id": {
+                      "type": "string"
+                    },
+                    "selector": {
+                      "type": "string"
+                    },
+                    "locator": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "selector": {
+                          "type": "string"
+                        },
+                        "role": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "text": {
+                          "type": "string"
+                        },
+                        "test_id": {
+                          "type": "string"
+                        },
+                        "exact": {
+                          "type": "boolean"
+                        },
+                        "nth": {
+                          "type": "integer"
+                        }
+                      }
+                    },
+                    "timeout_ms": {
+                      "type": "integer",
+                      "minimum": 100,
+                      "maximum": 60000
+                    }
+                  }
+                },
+                "wait_for": {
+                  "type": "object",
+                  "description": "动作后置条件，与 wait 的 input_schema 相同；Runtime 严格校验，超时不重放动作。"
+                }
+              }
+            }
+          },
+          {
+            "name": "focus",
+            "effect": "reversible_write",
+            "approval": "risk_based",
+            "timeout_ms": 5000,
+            "idempotency": "keyed",
+            "input_schema": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "node_id": {
+                  "type": "string"
+                },
+                "selector": {
+                  "type": "string"
+                },
+                "locator": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "selector": {
+                      "type": "string"
+                    },
+                    "role": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "text": {
+                      "type": "string"
+                    },
+                    "test_id": {
+                      "type": "string"
+                    },
+                    "exact": {
+                      "type": "boolean"
+                    },
+                    "nth": {
+                      "type": "integer"
+                    }
+                  }
+                },
+                "timeout_ms": {
+                  "type": "integer",
+                  "minimum": 100,
+                  "maximum": 60000
+                }
+              }
+            }
+          },
+          {
+            "name": "blur",
+            "effect": "reversible_write",
+            "approval": "risk_based",
+            "timeout_ms": 5000,
+            "idempotency": "keyed",
+            "input_schema": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "node_id": {
+                  "type": "string"
+                },
+                "selector": {
+                  "type": "string"
+                },
+                "locator": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "selector": {
+                      "type": "string"
+                    },
+                    "role": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "text": {
+                      "type": "string"
+                    },
+                    "test_id": {
+                      "type": "string"
+                    },
+                    "exact": {
+                      "type": "boolean"
+                    },
+                    "nth": {
+                      "type": "integer"
+                    }
+                  }
+                },
+                "timeout_ms": {
+                  "type": "integer",
+                  "minimum": 100,
+                  "maximum": 60000
+                }
+              }
+            }
+          },
+          {
+            "name": "type",
+            "effect": "reversible_write",
+            "approval": "risk_based",
+            "timeout_ms": 10000,
+            "idempotency": "keyed",
+            "input_schema": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "text"
+              ],
+              "properties": {
+                "node_id": {
+                  "type": "string"
+                },
+                "selector": {
+                  "type": "string"
+                },
+                "locator": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "selector": {
+                      "type": "string"
+                    },
+                    "role": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "text": {
+                      "type": "string"
+                    },
+                    "test_id": {
+                      "type": "string"
+                    },
+                    "exact": {
+                      "type": "boolean"
+                    },
+                    "nth": {
+                      "type": "integer"
+                    }
+                  }
+                },
+                "timeout_ms": {
+                  "type": "integer",
+                  "minimum": 100,
+                  "maximum": 60000
+                },
+                "text": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 2000
+                },
+                "wait_for": {
+                  "type": "object",
+                  "description": "动作后置条件，与 wait 的 input_schema 相同；Runtime 严格校验，超时不重放动作。"
+                }
+              }
+            }
+          },
+          {
+            "name": "hover",
+            "effect": "reversible_write",
+            "approval": "risk_based",
+            "timeout_ms": 5000,
+            "idempotency": "keyed",
+            "input_schema": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "node_id": {
+                  "type": "string"
+                },
+                "selector": {
+                  "type": "string"
+                },
+                "locator": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "selector": {
+                      "type": "string"
+                    },
+                    "role": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "text": {
+                      "type": "string"
+                    },
+                    "test_id": {
+                      "type": "string"
+                    },
+                    "exact": {
+                      "type": "boolean"
+                    },
+                    "nth": {
+                      "type": "integer"
+                    }
+                  }
+                },
+                "timeout_ms": {
+                  "type": "integer",
+                  "minimum": 100,
+                  "maximum": 60000
+                },
+                "wait_for": {
+                  "type": "object",
+                  "description": "动作后置条件，与 wait 的 input_schema 相同；Runtime 严格校验，超时不重放动作。"
+                }
+              }
+            }
+          },
+          {
+            "name": "click",
+            "effect": "external_write",
+            "approval": "always",
+            "timeout_ms": 10000,
+            "idempotency": "required",
+            "input_schema": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "node_id": {
+                  "type": "string"
+                },
+                "selector": {
+                  "type": "string"
+                },
+                "locator": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "selector": {
+                      "type": "string"
+                    },
+                    "role": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "text": {
+                      "type": "string"
+                    },
+                    "test_id": {
+                      "type": "string"
+                    },
+                    "exact": {
+                      "type": "boolean"
+                    },
+                    "nth": {
+                      "type": "integer"
+                    }
+                  }
+                },
+                "timeout_ms": {
+                  "type": "integer",
+                  "minimum": 100,
+                  "maximum": 60000
+                },
+                "wait_for": {
+                  "type": "object",
+                  "description": "动作后置条件，与 wait 的 input_schema 相同；Runtime 严格校验，超时不重放动作。"
+                }
+              }
+            }
+          },
+          {
+            "name": "press",
+            "effect": "external_write",
+            "approval": "always",
+            "timeout_ms": 10000,
+            "idempotency": "required",
+            "input_schema": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "key"
+              ],
+              "properties": {
+                "node_id": {
+                  "type": "string"
+                },
+                "selector": {
+                  "type": "string"
+                },
+                "locator": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "selector": {
+                      "type": "string"
+                    },
+                    "role": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "text": {
+                      "type": "string"
+                    },
+                    "test_id": {
+                      "type": "string"
+                    },
+                    "exact": {
+                      "type": "boolean"
+                    },
+                    "nth": {
+                      "type": "integer"
+                    }
+                  }
+                },
+                "timeout_ms": {
+                  "type": "integer",
+                  "minimum": 100,
+                  "maximum": 60000
+                },
+                "key": {
+                  "type": "string"
+                },
+                "wait_for": {
+                  "type": "object",
+                  "description": "动作后置条件，与 wait 的 input_schema 相同；Runtime 严格校验，超时不重放动作。"
+                }
+              }
+            }
+          }
+        ],
+        "permissions": {
+          "delegation": "explicit",
+          "lease": "exclusive",
+          "user_interaction": "pause",
+          "takeover": "user_confirmed"
+        },
+        "events": [
+          "ready",
+          "changed",
+          "action_completed",
+          "failed",
+          "waiting_user",
+          "lease_revoked"
+        ],
+        "receipts": {
+          "required": true,
+          "undo_when_declared": true
+        }
+      },
+      "targets": [
+        "_desktop"
+      ],
+      "uid": "desktron.browser.0001"
+    },
+    {
+      "id": "files",
+      "label": "Monaco IDE",
+      "desc": "代码编辑与文件浏览：懒加载目录树、Monaco 编辑器与 Cmd+S 保存",
+      "agentic": false,
+      "page": "files",
+      "file_open": {
+        "handler": "ide",
+        "accept": [
+          "*"
+        ]
+      },
+      "agent_operability": "none",
+      "agent_operability_reason": "尚未提供文件树与编辑器状态 adapter",
+      "targets": [
+        "_desktop"
+      ],
+      "uid": "desktron.files.0001"
+    },
+    {
+      "id": "file-browser",
+      "label": "文件浏览器",
+      "desc": "极简只读文件浏览：目录树、Markdown、文本、图片与网页预览",
+      "icon": "/icons/app-file-browser-original-7710531b884e.png",
+      "agentic": false,
+      "page": "file-browser",
+      "agent_operability": "none",
+      "agent_operability_reason": "尚未提供文件树与预览状态 adapter",
+      "targets": [
+        "_desktop"
+      ],
+      "uid": "desktron.file-browser.93a69f"
+    },
+    {
+      "id": "taskpaper",
+      "label": "TaskNote",
+      "desc": "跨工作流的任务清单：项目、任务、标签、折叠、聚焦与筛选",
+      "icon": "list",
+      "agentic": false,
+      "page": "taskpaper",
+      "agent_operability": "none",
+      "agent_operability_reason": "尚未提供任务观察与修改 adapter",
+      "targets": [
+        "_desktop"
+      ],
+      "uid": "desktron.taskpaper.31b13a",
+      "glass": true,
+      "chromeless": true
+    }
+  ],
+  "nativeApps": [
+    {
+      "id": "shadowrocket",
+      "label": "Shadowrocket",
+      "agent_operability": "L1",
+      "agent_control": {
+        "protocol": "desk.app-control/v1alpha1",
+        "identity": {
+          "app": "com.liguangming.Shadowrocket",
+          "version": "1",
+          "adapter": "macos-accessibility/v1"
+        },
+        "level": "L1",
+        "native_application": {
+          "bundle_id": "com.liguangming.Shadowrocket",
+          "target_binding": [
+            "bundle_id",
+            "pid",
+            "window_id"
+          ],
+          "code_requirement": "anchor apple generic and certificate leaf[field.1.2.840.113635.100.6.1.3] /* exists */ and identifier \"com.liguangming.Shadowrocket\"",
+          "projector": "ax-structural/v1",
+          "allowed_roles": [
+            "AXWindow",
+            "AXGroup",
+            "AXScrollArea",
+            "AXButton",
+            "AXCheckBox",
+            "AXRadioButton",
+            "AXStaticText",
+            "AXCell",
+            "AXRow",
+            "AXTable",
+            "AXOutline",
+            "AXList",
+            "AXTabGroup",
+            "AXToolbar"
+          ],
+          "allowed_semantics": [
+            "window",
+            "group",
+            "button",
+            "toggle",
+            "option",
+            "text",
+            "list",
+            "list_item",
+            "tabs",
+            "toolbar"
+          ],
+          "allowed_values": [
+            "on",
+            "off",
+            "status_connected",
+            "status_disconnected",
+            "status_connecting"
+          ],
+          "label_values": {
+            "Connected": "status_connected",
+            "Not Connected": "status_disconnected",
+            "Connecting": "status_connecting",
+            "已连接": "status_connected",
+            "未连接": "status_disconnected",
+            "正在连接": "status_connecting"
+          }
+        },
+        "resources": [
+          {
+            "type": "native-window",
+            "scope": "delegated-application-window"
+          }
+        ],
+        "observations": [
+          {
+            "name": "window",
+            "schema": "desk.native-window/v1",
+            "redaction": "native-allowlist",
+            "input_schema": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {}
+            }
+          }
+        ],
+        "actions": [],
+        "permissions": {
+          "delegation": "explicit",
+          "lease": "exclusive",
+          "user_interaction": "pause",
+          "takeover": "user_confirmed"
+        },
+        "events": [
+          "ready",
+          "changed",
+          "action_completed",
+          "failed",
+          "waiting_user",
+          "lease_revoked"
+        ],
+        "receipts": {
+          "required": true,
+          "undo_when_declared": true
+        }
+      }
+    }
+  ]
+}

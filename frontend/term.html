@@ -1,0 +1,66 @@
+<!doctype html>
+<!-- 终端嵌入(spike):xterm.js + WebSocket(/term)+ 后端 PTY。
+     依赖资产:frontend/vendor/xterm/{xterm.js,xterm.css,addon-fit.js}(家中网络取不到,需公司网络:
+       npm pack @xterm/xterm@5.5.0 @xterm/addon-fit@0.10.0 解包后拷过来,或 curl jsdelivr)。 -->
+<html lang="zh">
+<head>
+  <meta charset="utf-8">
+  <title>terminal</title>
+  <link rel="stylesheet" href="/vendor/xterm/xterm.css">
+  <style>
+    html,body{height:100%;margin:0;background:#131010}
+    #bar{height:34px;display:flex;align-items:center;gap:8px;padding:0 12px;color:#aeaeae;font:12px -apple-system}
+    #bar button{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);color:#aeaeae;border-radius:6px;padding:3px 10px;cursor:pointer;font-size:12px}
+    #bar button.on{border-color:#b0b9f9;color:#b0b9f9}
+    #term{position:absolute;top:34px;left:0;right:0;bottom:0;padding:6px 8px}
+    #miss{color:#d9a23b;padding:20px;font:13px -apple-system;display:none}
+  </style>
+</head>
+<body>
+  <div id="bar">
+    <span>引擎</span>
+    <button data-eng="claude" class="on">claude code</button>
+    <button data-eng="codex">codex</button>
+    <span id="stat" style="margin-left:auto"></span>
+  </div>
+  <div id="term"></div>
+  <div id="miss">缺 xterm.js 资产:把 <code>xterm.js / xterm.css / addon-fit.js</code> 放到
+    <code>frontend/vendor/xterm/</code>(公司网络:<code>npm pack @xterm/xterm@5.5.0 @xterm/addon-fit@0.10.0</code>)。</div>
+
+  <script src="/vendor/xterm/xterm.js"></script>
+  <script src="/vendor/xterm/addon-fit.js"></script>
+  <script>
+    if (!window.Terminal) { document.getElementById("miss").style.display = "block"; }
+    else {
+      const enc = new TextEncoder();
+      let term, fit, ws, engine = "claude";
+      const stat = (t) => { document.getElementById("stat").textContent = t; };
+
+      function start(eng) {
+        engine = eng;
+        document.querySelectorAll("#bar button").forEach((b) => b.classList.toggle("on", b.dataset.eng === eng));
+        if (ws) { try { ws.close(); } catch {} }
+        if (term) term.dispose();
+        term = new Terminal({ fontFamily: "ui-monospace, Menlo, monospace", fontSize: 13,
+          theme: { background: "#131010", foreground: "#eaeaea" }, cursorBlink: true });
+        fit = new FitAddon.FitAddon(); term.loadAddon(fit);
+        term.open(document.getElementById("term")); fit.fit();
+
+        ws = new WebSocket(`ws://${location.host}/term?engine=${eng}`);
+        ws.binaryType = "arraybuffer";
+        ws.onopen = () => { stat("● 已连接"); sendResize(); term.focus(); };
+        ws.onclose = () => stat("○ 已断开");
+        ws.onerror = () => stat("× 连接错误");
+        ws.onmessage = (e) => { term.write(new Uint8Array(e.data)); };   // 服务端二进制帧=终端输出
+        term.onData((d) => { if (ws.readyState === 1) ws.send(enc.encode(d)); });   // 键入=二进制帧
+      }
+      function sendResize() {
+        if (ws && ws.readyState === 1) ws.send(JSON.stringify({ resize: [term.cols, term.rows] }));   // 文本帧=resize
+      }
+      window.addEventListener("resize", () => { if (fit) { fit.fit(); sendResize(); } });
+      document.querySelectorAll("#bar button").forEach((b) => b.onclick = () => start(b.dataset.eng));
+      start("claude");
+    }
+  </script>
+</body>
+</html>

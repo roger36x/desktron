@@ -1,0 +1,621 @@
+#!/usr/bin/env bash
+# desktron — desktron 发行版启动器 v0
+#
+# 职责:以隔离的引擎环境跑工作台——屏蔽用户全局 config/plugins(防渗透与劫持),
+# 保留项目级 agents/skills 与用户凭证。
+# 机制:XDG_CONFIG_HOME / XDG_DATA_HOME 指向 desktron 受管目录。
+#
+# 用法:
+#   desktron ui                           # 自建前端(会话由各引擎适配器实现)
+#   desktron app-install [--activate]     # 构建原生壳；--activate 经宿主事务安全替换运行中版本
+#   desktron deps                         # 依赖体检:运行时/引擎是否就绪、版本是否达标(只读)
+#   desktron install-check                # 隔离后端启动与 Shepherd 离线验收
+#   desktron prepare                      # 准备 Desk 工作区与自管运行时
+#   desktron install                      # 一站式装机:体检 + 装引擎 + 准入闸 + 建工作区
+#   desktron sync-home                    # [开发态] 把源码同步到规范家目录
+#   desktron release                      # [开发态] 产出可分发 tarball(payload + 预编译 .app + install.sh)→ dist/
+#   desktron doctor                       # 体检:凭证/资产/manifest
+#   desktron validate                     # manifest 声明层校验(类型/闸语义/路径/id)
+#   desktron smoke [engine]               # [开发态] 终端管线冒烟(需 app 已启动)
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Git Bash must use the native Windows launcher, not POSIX provisioning/rsync.
+case "$(uname -s)" in
+  MINGW*|MSYS*|CYGWIN*)
+    _desk_python="${DESKTRON_PYTHON:-}"
+    if [[ -z "$_desk_python" ]]; then
+      for _candidate in "$HOME"/.local/share/desktron/runtime/python-*-windows-*/python.exe; do
+        [[ -f "$_candidate" ]] && _desk_python="$_candidate"
+      done
+    fi
+    [[ -z "$_desk_python" ]] || _desk_python="$(cygpath -u "$_desk_python")"
+    if [[ -z "$_desk_python" || ! -f "$_desk_python" ]]; then
+      echo "desktron: Desk managed Python not found; run install.ps1 or set DESKTRON_PYTHON." >&2
+      exit 1
+    fi
+    exec "$_desk_python" "$SCRIPT_DIR/../lib/desk_launcher.py" "$@"
+    ;;
+esac
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"   # git 仓库 = 分发物(只读资产源)
+# 服务可以直接从不可变 generation 启动，但 workspace 与 ~/.local/bin 应指向
+# 可原子切换的 canonical home。回滚 home 后，这些稳定入口会一并恢复。
+PRODUCT_LINK_ROOT="${DESKTRON_CANONICAL_HOME:-$PROJECT_ROOT}"
+startup_phase() {
+  [[ "${1:-}" == "" ]] && return
+  printf '[startup] launcher %-24s epoch=%s\n' "$1" "$(date +%s)"
+}
+[[ "${1:-}" == "ui" ]] && startup_phase "begin"
+# 开箱即用:把引擎落地目录并入 PATH。GUI 启动的 .app 只继承最小 PATH(/usr/bin:/bin:/usr/sbin:/sbin),
+# 拿不到交互 shell 的 ~/.local/bin 或 homebrew,否则:① ui_server spawn claude/codex 找不到;
+# ② 前端 lint 找不到 node 直接拒启(check_frontend)。claude/codex→~/.local/bin,
+# node/python3 等→homebrew(Apple Silicon /opt/homebrew,Intel /usr/local)。
+# Apple Silicon 上 /usr/local 是 Intel Homebrew 与旧安装器的位置。系统没有 Rosetta 时，
+# 那里的 x86_64 程序启动即 EBADARCH;排在 /usr/bin 前会遮住可用的系统 git 等工具。
+# 2026-10-06 实见:macOS 27 上 /usr/local/bin/git 2.23 让 pi-subagents 启动时 spawn
+# 失败，Pi 常驻进程随之崩溃。arm64 Mac 上把它移到系统目录之后，只作兜底。
+_DESK_LOCAL_HEAD="/usr/local/bin:"; _DESK_LOCAL_TAIL=""
+if [[ "$(uname -s)/$(uname -m)" == "Darwin/arm64" ]]; then
+  PATH=":$PATH:"
+  while [[ "$PATH" == *":/usr/local/bin:"* ]]; do PATH="${PATH//:\/usr\/local\/bin:/:}"; done
+  PATH="${PATH#:}"; PATH="${PATH%:}"
+  _DESK_LOCAL_HEAD=""; _DESK_LOCAL_TAIL=":/usr/local/bin"
+fi
+export PATH="${DESKTRON_RUNTIME_PATH:+$DESKTRON_RUNTIME_PATH:}$HOME/.local/bin:/opt/homebrew/bin:${_DESK_LOCAL_HEAD}${PATH}${_DESK_LOCAL_TAIL}"
+source "$SCRIPT_DIR/../lib/provision/python_runtime.sh"
+case "${1:-}" in
+  prepare|install) desk_python_ensure || exit 1 ;;
+  *) desk_python_select || exit 1 ;;
+esac
+_DESK_MANAGED_PATH="$PATH"
+ENGINE_HOME="${DESKTRON_ENGINE_HOME:-$HOME/.local/share/desktron/engine-home}"   # 引擎 config 隔离
+DATA_HOME="${DESKTRON_DATA_HOME:-$HOME/.local/share/desktron/data}"              # 会话/DB 隔离(不混入用户全局引擎目录)
+WORKSPACE="${DESKTRON_WORKSPACE:-$HOME/.local/share/desktron/workspace}"          # 运行态:agent cwd、会话归属、产物落点
+
+# 本地密钥(TESTFLOW_TOKEN 等;仓库外,chmod 600;格式:KEY=value 每行一条)
+SECRETS="$HOME/.config/desktron/env"
+if [[ -f "$SECRETS" ]]; then set -a; source "$SECRETS"; set +a; fi
+# App Control 宿主令牌不能被启动前的 lint/准备子进程继承。先从环境摘走，
+# 只在最终 exec Python 后端的瞬间恢复；普通 CLI 与 Agent 子进程始终看不到它。
+_DESK_APP_CONTROL_HOST_TOKEN="${DESKTRON_APP_CONTROL_HOST_TOKEN:-}"
+unset DESKTRON_APP_CONTROL_HOST_TOKEN
+_native_host_alive() {
+  [[ "${DESKTRON_NATIVE_LAUNCH:-}" != "1" ]] && return 0
+  local expected="${DESKTRON_NATIVE_HOST_PID:-}"
+  [[ "$expected" =~ ^[1-9][0-9]*$ && "$expected" -gt 1 ]] || return 1
+  [[ "$PPID" -eq "$expected" ]] || return 1
+  kill -0 "$expected" 2>/dev/null
+}
+# 凭证文件里可能残留 PATH 行。凭证仍照常加载，但运行时路径只由启动器管理，
+# 不能被遗留行覆盖；否则适配器可能找不到已安装好的 node/codex。
+export PATH="$_DESK_MANAGED_PATH"
+mkdir -p "$ENGINE_HOME" "$DATA_HOME"
+[[ "${1:-}" == "ui" ]] && startup_phase "environment ready"
+# 凭证不从全局拷贝:由用户用各引擎原生命令显式写入,隔离边界保持单一、可解释。
+
+# workspace = 分发物(repo/payload)与运行态(此目录)的分界。
+#   只读资产(.claude/.desk/manifest.yaml/AGENTS.md/common/...)——软链回 payload(单一源);
+#     agent 写权限层禁止写(见 ops.md edit deny),防穿透软链污染产品副本。
+#   knowledge——可写运行时 KB 实例,不软链。软链回 payload 会让 kn_add 写进产品副本,更新
+#     (rsync --delete)即清掉、丢用户数据。改为装机时从产品种子 copy 一次到 workspace 真实目录,
+#     之后归用户、更新不碰(对齐 .memory 的处置)。
+setup_workspace() {
+  mkdir -p "$WORKSPACE"
+  # workspace 设为 git 仓库:引擎按 git worktree 给项目稳定身份(非 git 目录会被算成 global,串库)
+  if [[ ! -d "$WORKSPACE/.git" ]]; then
+    ( cd "$WORKSPACE" && git init -q && git config user.email desktron@local && git config user.name desktron ) 2>/dev/null || true
+  fi
+  # 资产软链:引擎按"项目目录"读这些,实际指向 repo(单一源)
+  # AGENTS.md 必须在列:codex 唯一自动加载的项目文档就是 cwd→git root 间的 AGENTS.md;
+  # workspace 是 git root,缺它 codex 就只读到全局 ~/.codex/AGENTS.md,项目约定一片空白。
+  # 角色正身在 .desk/agents(引擎无关),与技能、约定一并软链进工作区。
+  for asset in .claude .desk manifest.yaml prompts AGENTS.md common desk-docs; do
+    local link="$WORKSPACE/$asset" target="$PRODUCT_LINK_ROOT/$asset"
+    # generation 首装时 canonical home 尚未切换，目标会暂时是悬空链接；资产是否
+    # 存在应检查当前 generation，切换 home 后这些稳定链接会同时生效。
+    [[ -e "$PROJECT_ROOT/$asset" ]] || continue
+    if [[ -L "$link" ]]; then
+      [[ "$(readlink "$link")" == "$target" ]] || { rm -f "$link"; ln -s "$target" "$link"; }
+    elif [[ ! -e "$link" ]]; then
+      ln -s "$target" "$link"
+    fi
+  done
+  # 只清理由 Desk 建立、且仍指向旧产品目录的退役资产软链；用户自己的同名目录不动。
+  local retired="$WORKSPACE/.opencode"
+  if [[ -L "$retired" && "$(readlink "$retired")" == "$PRODUCT_LINK_ROOT/.opencode" ]]; then
+    rm -f "$retired"
+  fi
+  # 存量 workspace/knowledge 可能含用户自己的历史数据，保持原样，不从产品种子复制或迁移。
+}
+
+engine_env() {
+  export XDG_CONFIG_HOME="$ENGINE_HOME"
+  export XDG_DATA_HOME="$DATA_HOME"
+  setup_workspace
+}
+
+prepare_runtime() {
+  # Python 是 bootstrap 的前置条件；不依赖 Brew，也不修改用户的系统 Node。
+  local node_bin
+  node_bin="$(PYTHONPATH="$SCRIPT_DIR/../lib${PYTHONPATH:+:$PYTHONPATH}" python3 -c \
+    'import os; from provision import setup_runtime; print(os.path.dirname(setup_runtime.prepare_sync()["node"]))')" || return 1
+  if [[ ! -x "$node_bin/node" ]]; then
+    echo "desktron: Node 准备结果不可用，安装已停止。" >&2
+    return 1
+  fi
+  # Python 子进程的环境不会传回 shell；后续 npm、引擎安装必须使用同一路径。
+  export PATH="$node_bin:$PATH"
+}
+
+prepare_pi_subagents() {
+  # 固定版上游扩展安装在独立版本槽，不改动正在运行的旧版。
+  local output rc
+  set +e
+  output="$(PYTHONPATH="$SCRIPT_DIR/../lib${PYTHONPATH:+:$PYTHONPATH}" python3 - <<'PY'
+from pi_subagents import ensure
+ok, detail = ensure()
+print(detail)
+raise SystemExit(0 if ok else 1)
+PY
+  )"; rc=$?
+  set -e
+  if [[ $rc -ne 0 ]]; then
+    echo "desktron: Pi 子代理固定依赖准备失败：${output:0:300}" >&2
+    return $rc
+  fi
+  echo "desktron: Pi 子代理固定依赖已就绪。"
+}
+
+prepare_shepherd_claude() {
+  # Shepherd 经锁定版 Claude Agent SDK 接续 Claude 会话。它只是 Shepherd 的可选依赖：
+  # 准备失败(多为离线)只提示，不阻断同步、安装或自更新；Shepherd 发送前仍会检查并报错。
+  local output rc
+  set +e
+  output="$(PYTHONPATH="$SCRIPT_DIR/../lib${PYTHONPATH:+:$PYTHONPATH}" python3 -m shepherd.cli prepare-claude 2>&1)"; rc=$?
+  set -e
+  if [[ $rc -ne 0 ]]; then
+    echo "desktron: Shepherd 的 Claude SDK 未就绪，可稍后运行 shepherd prepare-claude：${output:0:300}" >&2
+    return 0
+  fi
+  echo "desktron: Shepherd 的 Claude SDK 已就绪。"
+}
+
+cmd="${1:-}"; shift || true
+case "$cmd" in
+  _host-update-apply)
+    # 仅供已验证请求的原生宿主启动。路径固定在产品状态目录，避免请求内容成为任意执行入口。
+    _operation="${1:-}"; _host_pid="${2:-}"
+    [[ "$_operation" =~ ^[0-9a-f]{32}$ && "$_host_pid" =~ ^[1-9][0-9]*$ ]] || {
+      echo "desktron: 宿主更新操作身份无效" >&2; exit 2;
+    }
+    [[ "$PPID" -eq "$_host_pid" ]] || {
+      echo "desktron: 更新器不是已授权原生宿主的直接子进程" >&2; exit 2;
+    }
+    _update_root="$(dirname "${DESKTRON_DATA_HOME:-$HOME/.local/share/desktron/data}")/updates"
+    _update_script="$_update_root/self_update_apply.py"
+    [[ -f "$_update_script" ]] || { echo "desktron: 找不到已暂存更新器" >&2; exit 2; }
+    exec python3 "$_update_script" --state "$_update_root/state.json" \
+      --native-host-pid "$_host_pid" --operation-id "$_operation"
+    ;;
+  ui)
+    # 原生壳可能在前置检查期间退出；开始与结束都核验直接父进程，防止已被 PID 1
+    # 收养的启动器继续 exec 后端。更新器仍负责清理它创建的完整专属进程组。
+    _native_host_alive || exit 75
+    # 启动不下载依赖；只接受版本与本机架构都合格的 Node。
+    _node_command="$(PYTHONPATH="$SCRIPT_DIR/../lib${PYTHONPATH:+:$PYTHONPATH}" python3 -c \
+      'from provision.setup_runtime import node_command; print(node_command())')"
+    [[ -n "$_node_command" ]] || { echo "desktron: 缺少原生 Node ≥22.19，请运行 desktron prepare。" >&2; exit 1; }
+    export PATH="$(dirname "$_node_command"):$PATH"
+    # 前端静态检查门:语法/CSS括号/引用,失败拒启
+    python3 "$PROJECT_ROOT/scripts/check_frontend.py" || { echo "修复上述前端问题后再启动"; exit 1; }
+    _native_host_alive || exit 75
+    startup_phase "frontend check ready"
+    # 自建前端:反代静态服务 + 持有引擎(ui_server 作为引擎父进程,退出一并收,不留孤儿)
+    engine_env
+    startup_phase "workspace ready"
+    # 第 81 行已经 shift 掉子命令,端口是移位后的 $1——原来写 $2 取到的恒为空,
+    # `desktron ui <port>` 的端口参数一直没生效,只能跑在 7765 上。
+    # EPORT 跟着走:两个实例并存时(例如用非标端口试跑)要整体错开,不能都占 7766。
+    UIPORT="${1:-7765}"; EPORT=$((UIPORT + 1))
+    cd "$WORKSPACE"
+    # caffeinate:直接从 CLI 跑 ui 时仍由它包住服务。原生壳启动时不能走这条同步前置链:
+    # 2026-08-29 实见 caffeinate 获取电源断言偶发卡 30 秒，Python 直到它结束才会 exec，
+    # 整页因此至少空等 30 秒。原生壳改成先拉服务，再另起 `caffeinate -w <pid>` 异步保活。
+    # Linux 没有 caffeinate，也不需要——常驻服务由 systemd 托管。
+    #
+    # -i 只持有 PreventUserIdleSystemSleep,这一档没防住:2026-08-25 23:14:19 与 23:17:49
+    # 两次 `Entering Sleep state due to 'Idle Sleep':TCPKeepAlive=active Using AC`,当时
+    # caffeinate 的断言正生效(pmset -g assertions 里查得到),唤醒记录是 from Deep Idle。
+    # 为什么 -i 没拦住,没有查清。
+    #
+    # 补 -s(PreventSystemSleep):比 -i 强的一档,2026-08-26 查 pmset -g assertions 时它是 0,
+    # 也就是从来没人持有过。两条边界要知道:一、-s 只在接电源时有效,用电池时这一项不起
+    # 作用(-i 仍在);二、合盖照样睡,那是 clamshell sleep,除非接了外接显示器。
+    if [[ "${DESKTRON_NATIVE_LAUNCH:-}" != "1" ]] && command -v caffeinate >/dev/null 2>&1; then
+      startup_phase "exec ui server"
+      exec caffeinate -is python3 "$SCRIPT_DIR/../lib/ui_server.py" "$PROJECT_ROOT/frontend" "$UIPORT" "$EPORT" "$WORKSPACE"
+    fi
+    startup_phase "exec ui server"
+    if [[ -n "$_DESK_APP_CONTROL_HOST_TOKEN" ]]; then
+      export DESKTRON_APP_CONTROL_HOST_TOKEN="$_DESK_APP_CONTROL_HOST_TOKEN"
+    fi
+    exec python3 "$SCRIPT_DIR/../lib/ui_server.py" "$PROJECT_ROOT/frontend" "$UIPORT" "$EPORT" "$WORKSPACE"
+    ;;
+  install-check)
+    # 只在临时目录启动验收后端，不连接模型、不触碰现有工作区。
+    exec python3 "$SCRIPT_DIR/../lib/provision/install_check.py" --root "$PROJECT_ROOT" "$@"
+    ;;
+  validate)
+    exec python3 "$SCRIPT_DIR/../lib/validate_manifest.py" "$PROJECT_ROOT"
+    ;;
+  deps)
+    # 依赖体检(只读):运行时/引擎是否就绪、版本是否达标。声明见 manifest.yaml requirements。
+    echo "desktron: 依赖体检(声明见 manifest.yaml requirements)"
+    exec python3 "$SCRIPT_DIR/../lib/check_deps.py" "$PROJECT_ROOT"
+    ;;
+  provider-setup)
+    # 安装、升级与首次设置共用；不主动登录，不把未授权状态写成已启用。
+    ;;
+  pi-subagents-setup)
+    # 发行安装、自更新和开发同步共用；失败关闭，不从用户 Pi package 目录兜底。
+    # Shepherd 的 Claude SDK 同在这一步准备，它自身失败不影响退出码。
+    prepare_runtime
+    prepare_pi_subagents
+    prepare_shepherd_claude
+    ;;
+  prepare)
+    # 前端启动检查需要 Node，必须在 .app 首次启动前准备好。AI 引擎与外部工具
+    # 由应用内引导页调用确定性脚本完成。
+    engine_env
+    mkdir -p "$HOME/.local/bin"
+    for _tool in desktron curator kbkit desk-artifact desk-msg desk-session desk-task shepherd; do
+      _src="$PRODUCT_LINK_ROOT/desktron/bin/$_tool"
+      _source="$PROJECT_ROOT/desktron/bin/$_tool"
+      _dst="$HOME/.local/bin/$_tool"
+      [[ -x "$_source" ]] || continue
+      if [[ ! -L "$_dst" || "$(readlink "$_dst" 2>/dev/null || true)" != "$_src" ]]; then
+        rm -f "$_dst"
+        ln -s "$_src" "$_dst"
+      fi
+    done
+    prepare_runtime
+    prepare_pi_subagents
+    prepare_shepherd_claude
+    echo "desktron: Desk 工作区、运行环境与可用 Provider 已准备好。"
+    ;;
+  install)
+    # 一站式装机:体检依赖 → 自动装引擎(缺则装最新,--upgrade 强制刷新)→ 工作区 → 引导登录。
+    upgrade=false; [[ "${1:-}" == "--upgrade" ]] && upgrade=true
+    prepare_runtime
+    echo "== Pi Subagents 固定依赖(幂等)=="
+    prepare_pi_subagents
+    prepare_shepherd_claude
+    echo
+    echo "== 依赖体检 =="
+    if ! python3 "$SCRIPT_DIR/../lib/check_deps.py" "$PROJECT_ROOT"; then
+      # Node 已由与 prepare 相同的自管安装器准备；其余运行时按声明补装后复检。
+      echo
+      echo "== 补装缺失的运行时 =="
+      while IFS=$'\t' read -r _n _cmd; do
+        [[ -z "$_n" || -z "$_cmd" ]] && continue
+        echo "  $_n: 缺,尝试安装…  ($_cmd)"
+        bash -c "$_cmd" || echo "  $_n: 自动安装没成,按上面的提示手动装一次。" >&2
+      done < <(python3 "$SCRIPT_DIR/../lib/check_deps.py" "$PROJECT_ROOT" --emit-missing-runtime 2>/dev/null)
+      echo
+      if ! python3 "$SCRIPT_DIR/../lib/check_deps.py" "$PROJECT_ROOT" >/dev/null 2>&1; then
+        echo "desktron: 必备运行时仍然缺失,按上面命令补齐后重跑 desktron install。" >&2
+        exit 1
+      fi
+      echo "desktron: 运行时已补齐,继续。"
+    fi
+    echo
+    echo "== 飞书 Bot 运行依赖(幂等)=="
+    # 依赖落在产品目录之外，更新与 generation 切换不会覆盖。装机时主动补齐，保证
+    # 新机器迁入已有 Bot 声明与凭证后可以直接恢复；失败不阻断 Desk 其他功能，后台
+    # 看护仍会按退避重试并在日志中保留具体原因。
+    PYTHONPATH="$SCRIPT_DIR/../lib${PYTHONPATH:+:$PYTHONPATH}" python3 -c '
+from larkbot import sidecar
+ok, why = sidecar.ensure_deps()
+print("  " + ("ok: " if ok else "未就绪: ") + why)
+raise SystemExit(0 if ok else 1)
+' || echo "desktron: 飞书 Bot 依赖暂未装好；不影响 Desk 使用，后台会继续重试。" >&2
+    echo
+    echo "== 引擎(claude/codex/pi,追最新)=="
+    while IFS=$'\t' read -r name inst; do
+      [[ -z "$name" ]] && continue
+      _installed=false; command -v "$name" >/dev/null 2>&1 && _installed=true
+      if $_installed && ! $upgrade && python3 "$SCRIPT_DIR/../lib/check_deps.py" "$PROJECT_ROOT" --engine-ready "$name"; then
+        echo "  $name: 已装($("$name" --version 2>/dev/null | head -1));协议能力已确认,跳过"
+      else
+        if $_installed && ! $upgrade; then _verb="修复"; elif $_installed; then _verb="升级"; else _verb="安装"; fi
+        echo "  $name: ${_verb}最新…  ($inst)"
+        if bash -c "$inst"; then
+          if ! python3 "$SCRIPT_DIR/../lib/check_deps.py" "$PROJECT_ROOT" --engine-ready "$name"; then
+            echo "desktron: $name 已安装但协议探针仍未通过；不会把它标记为可用。" >&2
+          fi
+        else
+          echo "desktron: $name 安装失败,手动跑上面命令。" >&2
+        fi
+      fi
+    done < <(python3 "$SCRIPT_DIR/../lib/check_deps.py" "$PROJECT_ROOT" --emit-engines)
+
+    # macOS:引擎二进制未签名,Gatekeeper/XProtect 会当 malware 拦("codex contains malware")。
+    # 去隔离位 + ad-hoc 签名解除拦截。codex 的原生二进制藏在 npm 包 vendor 里(PATH 上的是 JS shim)。
+    if [[ "$(uname -s)" == Darwin ]] && command -v codesign >/dev/null 2>&1; then
+      echo
+      echo "== macOS:引擎去隔离 + ad-hoc 签名 =="
+      _unblock() {
+        local f="$1"
+        [[ -e "$f" ]] || return 0
+        xattr -rd com.apple.quarantine "$f" 2>/dev/null || true   # 去隔离:所有引擎都做(去掉 quarantine 位才是 Gatekeeper 放行的关键)
+        file "$f" 2>/dev/null | grep -q "Mach-O" || return 0       # 非 Mach-O(JS shim 等)不签
+        # ad-hoc 重签只补给「完全没签名」的二进制——未签名才会触发 macOS malware 拦截。
+        # 已签名的一律不动:无条件 --force 重签会把 claude 的 Developer-ID 真签剥成 ad-hoc,
+        # 在签名策略严的旧/托管 macOS 上反被 AMFI 拒(子进程继承更严校验)→ 引擎一启即退。
+        # 判据用 codesign -dv 的退出码(有无任何签名),不是 -v --strict(签名是否有效)。
+        if ! codesign -dv "$f" >/dev/null 2>&1; then
+          codesign --force --sign - "$f" 2>/dev/null || echo "    codesign 失败(未签名二进制): $f" >&2
+        fi
+      }
+      for e in claude codex pi; do
+        p="$(command -v "$e" 2>/dev/null)" && _unblock "$p"
+      done
+      for cdx in "$HOME/.local/lib/node_modules/@openai/codex" "$(npm root -g 2>/dev/null)/@openai/codex"; do
+        [[ -d "$cdx" ]] || continue
+        xattr -rd com.apple.quarantine "$cdx" 2>/dev/null || true
+        while IFS= read -r b; do _unblock "$b"; done < <(find "$cdx" -type f -path '*vendor*' \( -name codex -o -name rg -o -name zsh \) 2>/dev/null)
+      done
+      echo "  ok"
+    fi
+
+    echo
+    echo "== 准入闸(记忆写入纪律)=="
+    # curator 与 memory-engine 在 desktron/lib/{curator,memory_engine}。lib 已在 ui_server 的
+    # sys.path 上,库侧直接 import;命令侧软链自带的 bin/curator 进 ~/.local/bin(agent 的 skill 与 hook 调 `curator`)。
+    _kb_src="$PRODUCT_LINK_ROOT/desktron/bin/curator"
+    _kb_dst="$HOME/.local/bin/curator"
+    if [ -x "$PROJECT_ROOT/desktron/bin/curator" ]; then
+      mkdir -p "$HOME/.local/bin"
+      if [ -L "$_kb_dst" ] && [ "$(readlink "$_kb_dst")" = "$_kb_src" ]; then
+        echo "  curator: 已就位($_kb_dst)"
+      else
+        rm -f "$_kb_dst"
+        ln -s "$_kb_src" "$_kb_dst"
+        echo "  curator: 软链到 $_kb_dst"
+      fi
+    else
+      echo "  desktron: 缺 desktron/bin/curator,记忆命令不可用。" >&2
+    fi
+    # 旧名兼容入口(2026-08-13 更名 kbkit → curator)。漏改的 skill 描述与历史会话里仍写着
+    # kbkit,软链一并装上,调用时由 bin/kbkit 向 stderr 提示更名再转发。保留期限由用户定。
+    _kbold_src="$PRODUCT_LINK_ROOT/desktron/bin/kbkit"
+    _kbold_dst="$HOME/.local/bin/kbkit"
+    if [ -x "$PROJECT_ROOT/desktron/bin/kbkit" ]; then
+      if [ -L "$_kbold_dst" ] && [ "$(readlink "$_kbold_dst")" = "$_kbold_src" ]; then
+        echo "  kbkit(旧名兼容): 已就位($_kbold_dst)"
+      else
+        rm -f "$_kbold_dst"
+        ln -s "$_kbold_src" "$_kbold_dst"
+        echo "  kbkit(旧名兼容): 软链到 $_kbold_dst"
+      fi
+    fi
+    echo
+    echo "== 工作区(XDG 隔离目录 + 资产软链)=="
+    engine_env && echo "  ok: $WORKSPACE"
+    echo
+    echo
+    echo "== 还需用户自备(登录态/密钥,无法自动)=="
+    echo "  - 登录:claude auth login(订阅或 API key)、codex login、pi 内 /login"
+    echo "  - 本地密钥:~/.config/desktron/env(chmod 600)"
+    echo "  - 桌面 app:desktron app-install"
+    ;;
+  update)
+    # 分发通道 2026-09-01 下线:原先这里 clone dist 仓、跑它的 install.sh。dist 是单仓化
+    # 之前留下的派生物通道,而单仓之后源码本身就是完整可构建的一份。新通道(下载、签名、
+    # 更新、回滚)正在单独设计。在它就位之前不装哑巴桩——把当前可用的两条路直接说出来,
+    # 免得人对着一个不动的按钮猜是网络问题还是没更新。
+    echo "desktron: 自动更新通道已下线(dist 仓退役,新通道设计中)。" >&2
+    echo >&2
+    echo "  开发态同步:      desktron sync-home" >&2
+    echo "  从源码出发行包:  bash scripts/dev/release.sh   # 产本地 tarball,再跑其 install.sh" >&2
+    exit 2
+    ;;
+  sync-home)
+    # 源码 checkout：把仓库同步到规范家目录。发行安装的 home 由安装／更新事务准备。
+    [[ $# -eq 0 ]] || { echo "desktron: sync-home 不接受参数 $1" >&2; exit 2; }
+    if [[ ! -d "$PROJECT_ROOT/scripts/dev" ]]; then
+      echo "desktron: sync-home 是开发态命令；本机产品更新请使用设置页。" >&2
+      exit 2
+    fi
+
+    # vendor 是 gitignored 构建产物，不能把源码 checkout 直接当作完整 payload。
+    # 与 release 共用锁定构建入口，并在创建、迁移或清理 dest 之前完成；构建或校验
+    # 失败时，已安装 home 保持原样。
+    # 启动器补充的 /usr/local/bin 可能覆盖原生托管 Node；先重新选择已验证的运行时，
+    # 不等复制后才准备依赖，避免构建调用模拟架构 Node 或污染既有 home。
+    prepare_runtime
+    echo "desktron: 构建内置 App 静态资源…"
+    bash "$PROJECT_ROOT/scripts/dev/build-builtin-apps.sh"
+
+    dest="$HOME/.local/share/desktron/home"
+    mkdir -p "$dest"
+    rsync -a --delete --exclude-from="$PROJECT_ROOT/scripts/payload-excludes.txt" "$PROJECT_ROOT/" "$dest/"
+    # 开发同步必须覆盖正式安装留下的版本标记；否则更新器会把这份脏工作树当成可自动
+    # 替换的发行版。指纹覆盖实际同步后的 payload，且排除标记自身避免自引用。
+    _payload_sha="$(python3 -c '
+import hashlib, os, stat, sys
+h=hashlib.sha256(); root=os.path.abspath(sys.argv[1])
+for dp,dn,fn in os.walk(root,topdown=True,followlinks=False):
+ dn.sort(); fn.sort()
+ for name in dn+fn:
+  fp=os.path.join(dp,name); rel=os.path.relpath(fp,root)
+  if rel==".payload-rev": continue
+  st=os.lstat(fp); mode=stat.S_IMODE(st.st_mode)
+  if stat.S_ISLNK(st.st_mode): kind,data=b"L",os.readlink(fp).encode()
+  elif stat.S_ISDIR(st.st_mode): kind,data=b"D",b""
+  elif stat.S_ISREG(st.st_mode):
+   kind=b"F"
+   with open(fp,"rb") as f: data=f.read()
+  else: continue
+  h.update(rel.encode()+b"\0"+kind+str(mode).encode()+b"\0"); h.update(hashlib.sha256(data).digest())
+print(h.hexdigest())' "$dest")"
+    printf 'payload:%s\n' "$_payload_sha" > "$dest/.payload-rev"
+    printf 'payload:%s\n' "$_payload_sha" > "$HOME/.local/share/desktron/.update-rev"
+    printf '0\n' > "$HOME/.local/share/desktron/.update-build"
+    echo "desktron: 已同步到 $dest"
+    # node_modules 不进 payload；开发同步后立即补齐与新代码匹配的固定扩展版本。
+    bash "$dest/desktron/bin/desktron" pi-subagents-setup
+    ;;
+  release)
+    # 打包 tarball,开发态命令;release.sh 在 scripts/dev/(不随 payload/dist 发行)。
+    [[ -f "$PROJECT_ROOT/scripts/dev/release.sh" ]] || { echo "desktron: release 是开发态命令,仅源码 checkout 可用。" >&2; exit 2; }
+    exec bash "$PROJECT_ROOT/scripts/dev/release.sh" "$@"
+    ;;
+  smoke)
+    # 终端管线冒烟(需 app 已启动),开发态命令;term_smoke.py 在 scripts/dev/(不随发行)。
+    [[ -f "$PROJECT_ROOT/scripts/dev/term_smoke.py" ]] || { echo "desktron: smoke 是开发态命令,仅源码 checkout 可用。" >&2; exit 2; }
+    python3 "$PROJECT_ROOT/scripts/dev/term_smoke.py" "${1:-}"
+    ;;
+  app-install)
+    # 生成 ~/Applications/Desktron.app。壳实现可替换(swift|chrome),默认 swift 原生窗口。
+    # 任何壳只遵守三条契约:① 读 DESKTRON_HOME/Resources 定位仓库;② 拉起 desktron web 并轮询就绪;
+    # ③ webview 加载 http://127.0.0.1:PORT/,关窗收子进程。换壳=换 IMPL,其余不变。
+    ACTIVATE=false
+    if [[ "${1:-}" == "--activate" ]]; then
+      ACTIVATE=true; shift; IMPL="${1:-swift}"
+    else
+      IMPL="${1:-swift}"
+    fi
+    DEFAULT_APP="$HOME/Applications/Desktron.app"
+    ACTIVATE_STAGE=""
+    if $ACTIVATE; then
+      [[ -z "${DESKTRON_APPDIR:-}" ]] || { echo "desktron: --activate 不能与 DESKTRON_APPDIR 同用" >&2; exit 2; }
+      mkdir -p "$HOME/.local/share/desktron/updates"
+      ACTIVATE_STAGE="$(mktemp -d "$HOME/.local/share/desktron/updates/dev-host.XXXXXXXX")"
+      APPDIR="$ACTIVATE_STAGE/Desktron.app"
+      _cleanup_dev_host_stage() { [[ -z "$ACTIVATE_STAGE" ]] || rm -rf -- "$ACTIVATE_STAGE"; }
+      trap _cleanup_dev_host_stage EXIT
+    else
+      APPDIR="${DESKTRON_APPDIR:-$DEFAULT_APP}"
+      if [[ -e "$APPDIR" ]]; then
+        set +e
+        python3 "$SCRIPT_DIR/../lib/dev_app_update.py" running --app "$APPDIR"
+        RUNNING_STATUS=$?
+        set -e
+        case "$RUNNING_STATUS" in
+          0) echo "desktron: 目标原生壳正在运行，拒绝原地覆盖；请使用 desktron app-install --activate。" >&2; exit 2;;
+          1) ;;
+          *) echo "desktron: 无法安全确认目标原生壳状态，拒绝覆盖。" >&2; exit 2;;
+        esac
+      fi
+    fi
+    APP_REV="${DESKTRON_APP_REV:-$(git -C "$PROJECT_ROOT" rev-parse HEAD 2>/dev/null || true)}"
+    APP_BUILD="${DESKTRON_APP_BUILD:-1}"
+    APP_VERSION="${DESKTRON_APP_VERSION:-$(sed -n 's/^version:[[:space:]]*\([0-9]\{1,\}\).*/\1/p' "$PROJECT_ROOT/manifest.yaml" | head -1)}"
+    [[ "$APP_REV" =~ ^[0-9a-fA-F]{7,64}$ ]] || APP_REV="dev"
+    [[ "$APP_BUILD" =~ ^[1-9][0-9]*$ ]] || APP_BUILD="1"
+    [[ "$APP_VERSION" =~ ^[0-9]+([.][0-9]+){0,2}$ ]] || APP_VERSION="0"
+    rm -rf "$APPDIR"; mkdir -p "$APPDIR/Contents/MacOS" "$APPDIR/Contents/Resources"
+    cp "$PROJECT_ROOT/desktop/icons/icon.icns" "$APPDIR/Contents/Resources/icon.icns" 2>/dev/null || true
+    printf '%s' "$PROJECT_ROOT" > "$APPDIR/Contents/Resources/desktron_home"   # 仓库路径(壳契约①)
+    printf '%s\n' "$APP_REV" > "$APPDIR/Contents/Resources/release-rev"
+    printf '%s\n' "$APP_BUILD" > "$APPDIR/Contents/Resources/release-build"
+    cat > "$APPDIR/Contents/Info.plist" <<PLIST
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>CFBundleName</key><string>Desktron</string>
+  <!-- 程序坞与访达显示的名字取 .app 的文件名,不是这两个键(实测:VS Code 的
+       CFBundleDisplayName 是 Code,系统仍显示 Visual Studio Code)。这两个键管的是
+       菜单栏与部分系统面板。要让程序坞也改名,得把 bundle 文件名一并改掉。 -->
+  <key>CFBundleDisplayName</key><string>Desktron</string>
+  <key>CFBundleIdentifier</key><string>io.github.desktron</string>
+  <key>CFBundleShortVersionString</key><string>$APP_VERSION</string>
+  <key>CFBundleVersion</key><string>$APP_BUILD</string>
+  <key>CFBundleExecutable</key><string>desktron</string>
+  <key>CFBundlePackageType</key><string>APPL</string>
+  <key>CFBundleIconFile</key><string>icon</string>
+  <key>NSHighResolutionCapable</key><true/>
+  <key>NSPrincipalClass</key><string>NSApplication</string>
+  <key>LSMinimumSystemVersion</key><string>13.0</string>
+</dict></plist>
+PLIST
+    case "$IMPL" in
+      swift)
+        SRC="$PROJECT_ROOT/desktop/native/main.swift"
+        SUPERVISOR="$PROJECT_ROOT/desktop/native/backend_supervisor.swift"
+        NATIVE_CONTROL="$PROJECT_ROOT/desktop/native/native_control.swift"
+        [[ -f "$SRC" && -f "$SUPERVISOR" && -f "$NATIVE_CONTROL" ]] || { echo "缺原生壳源码" >&2; exit 1; }
+        echo "编译 Swift 原生壳…"
+        # 部署目标必须显式锁到 macOS 13:不设时 swiftc 默认按构建机系统版本
+        # (如构建机 macOS 26 → 二进制 minos=26),分发到旧系统(如 Sequoia 15.x)会被
+        # 拒「这个版本不能与此版本一起使用」。与 Info.plist 的 LSMinimumSystemVersion 对齐。
+        # 优先编 universal(arm64 + x86_64,兼顾 Intel 机);缺 x86_64 SDK 则回落当前架构。
+        OUT="$APPDIR/Contents/MacOS/desktron"
+        _sw() { swiftc -O "$SUPERVISOR" "$NATIVE_CONTROL" "$SRC" -o "$1" -target "$2-apple-macos13.0" -framework Cocoa -framework WebKit -framework ApplicationServices -framework UserNotifications; }
+        TMP_ARM="$(mktemp)"; TMP_X86="$(mktemp)"
+        if _sw "$TMP_ARM" arm64 && _sw "$TMP_X86" x86_64 && lipo -create "$TMP_ARM" "$TMP_X86" -output "$OUT" 2>/dev/null; then
+          echo "  universal(arm64 + x86_64)"
+        else
+          NATIVE_ARCH="$(uname -m)"   # arm64 / x86_64
+          _sw "$OUT" "$NATIVE_ARCH" || { echo "swiftc 失败,可改用: desktron app-install chrome" >&2; rm -f "$TMP_ARM" "$TMP_X86"; exit 1; }
+          echo "  仅本机架构($NATIVE_ARCH;x86_64 SDK 不可用时的回落)"
+        fi
+        rm -f "$TMP_ARM" "$TMP_X86"
+        printf '1\n' > "$APPDIR/Contents/Resources/update-launch-contract"
+        echo "已生成 $APPDIR(Swift 原生壳,零外部依赖;双击启动)"
+        ;;
+      chrome)
+        BROWSER=""
+        for b in "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
+                 "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge" \
+                 "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser"; do
+          [[ -x "$b" ]] && { BROWSER="$b"; break; }
+        done
+        [[ -z "$BROWSER" ]] && { echo "未找到 Chrome/Edge/Brave" >&2; exit 1; }
+        cat > "$APPDIR/Contents/MacOS/desktron" <<LAUNCH
+#!/usr/bin/env bash
+set -euo pipefail
+ROOT="\$(cat "\$(dirname "\$0")/../Resources/desktron_home")"
+PORT=7766; PROFILE="\$HOME/.local/share/desktron/chrome-profile"
+if ! nc -z 127.0.0.1 \$PORT 2>/dev/null; then
+  ( cd "\$ROOT" && bash desktron/bin/desktron web --port \$PORT >/tmp/desktron-web.log 2>&1 ) &
+  for i in \$(seq 1 60); do nc -z 127.0.0.1 \$PORT 2>/dev/null && break; sleep 0.5; done
+fi
+mkdir -p "\$PROFILE"; : > "\$PROFILE/First Run"
+exec "$BROWSER" --app="http://127.0.0.1:\$PORT/" --user-data-dir="\$PROFILE" \\
+  --no-first-run --no-default-browser-check --window-size=1280,860
+LAUNCH
+        chmod +x "$APPDIR/Contents/MacOS/desktron"
+        echo "已生成 $APPDIR(Chrome --app fallback;双击启动)"
+        ;;
+      *) echo "未知壳实现: $IMPL(可选 swift|chrome)" >&2; exit 1;;
+    esac
+    python3 "$SCRIPT_DIR/../lib/macos_codesign.py" sign "$APPDIR"
+    if $ACTIVATE; then
+      STAGE_TO_SUBMIT="$ACTIVATE_STAGE"
+      # 从发出 POST 起，响应超时也不能证明宿主未接管；保留 stage 供 helper 和事后核对。
+      ACTIVATE_STAGE=""
+      python3 "$SCRIPT_DIR/../lib/dev_app_update.py" activate --stage "$STAGE_TO_SUBMIT"
+      echo "开发壳激活事务已提交；日志：$HOME/.local/share/desktron/updates/apply.log"
+    fi
+    echo "仓库路径已写入 Resources/desktron_home,移动仓库后重新 app-install。"
+    ;;
+  doctor)
+    echo "project   : $PROJECT_ROOT"
+    # 凭证现状(零凭证分发:全部本机)
+    SEC_N=$(grep -cE '^[A-Z_]+=' "$SECRETS" 2>/dev/null || echo 0)
+    echo "credentials: SECRETS=${SEC_N} 项(本机,不随 git);各引擎登录态见设置页"
+    echo "isolation : config=$ENGINE_HOME"
+    echo "          : data=$DATA_HOME(会话隔离)"
+    echo "workspace : $WORKSPACE(agent cwd;资产软链自 repo)"
+    [[ -d "$PROJECT_ROOT/.desk/agents" ]] && echo "agents    : $(ls "$PROJECT_ROOT/.desk/agents" | wc -l | tr -d ' ') 个" || echo "agents    : 缺失"
+    [[ -d "$PROJECT_ROOT/.claude/skills" ]] && echo "skills    : $(ls "$PROJECT_ROOT/.claude/skills" | wc -l | tr -d ' ') 个" || echo "skills    : 缺失"
+    [[ -d "$PROJECT_ROOT/knowledge/deepwiki" ]] && echo "knowledge : $(ls "$PROJECT_ROOT/knowledge/deepwiki" 2>/dev/null | wc -l | tr -d ' ') 仓" || echo "knowledge : 空(见 knowledge/access-gaps.md)"
+    [[ -n "${TESTFLOW_TOKEN:-}" ]] && echo "secrets   : TESTFLOW_TOKEN ok" || echo "secrets   : TESTFLOW_TOKEN 缺失(写入 $SECRETS,chmod 600)"
+    echo "manifest  : $(python3 "$SCRIPT_DIR/../lib/validate_manifest.py" "$PROJECT_ROOT" | tail -1)"
+    ;;
+  *)
+    sed -n '4,13p' "$0" >&2; exit 2
+    ;;
+esac

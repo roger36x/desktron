@@ -1,0 +1,121 @@
+#!/usr/bin/env python3
+"""当前工作流的制品:文档、demo、预览页这类做出来给人看的东西,不含代码。
+
+集中在 domains/<工作流>/artifacts/。本地文件不需要这条命令——写进那个目录就是登记,
+界面按目录列。这条命令管两件目录说不了的事:
+
+  dir           打印制品目录(先建好),写文件前用它取路径
+  link <url>    登记一件不是本地文件的产出:预览链接、飞书文档、妙搭应用
+  note <ref>    给某一件补标题或说明(文件名常常说不清它是什么,而改名会断掉别处的引用)
+  list          看当前清单
+
+给 agent 用,所以接口是 shell 命令而不是工具定义:codex / pi 的工具表不由
+我们控制,能跨引擎共用的最小面就是「能跑一条命令」(与 desk-msg 同一理由)。
+"""
+import argparse
+import json
+import os
+import sys
+import urllib.error
+import urllib.parse
+import urllib.request
+
+PORT = os.environ.get("DESKTRON_UI_PORT", "7765")
+BASE = f"http://127.0.0.1:{PORT}"
+ME = os.environ.get("DESKTRON_SESSION_ID", "")
+WORKSPACE = os.environ.get("DESKTRON_REPO_ROOT",
+                           os.path.expanduser("~/.local/share/desktron/workspace"))
+
+
+def _get(path):
+    with urllib.request.urlopen(BASE + path, timeout=20) as r:
+        return json.loads(r.read().decode("utf-8") or "{}")
+
+
+def _post(path, body):
+    req = urllib.request.Request(BASE + path, method="POST",
+                                 data=json.dumps(body).encode("utf-8"),
+                                 headers={"content-type": "application/json"})
+    with urllib.request.urlopen(req, timeout=20) as r:
+        return json.loads(r.read().decode("utf-8") or "{}")
+
+
+def resolve_domain(explicit=""):
+    """当前会话属于哪个工作流。
+
+    先问服务端(会话 id → 归属,与 cwd 无关,复合键与外部仓都算得准);问不到再从 cwd 反推,
+    只认 domains/<id>/ 这一种形状——猜错工作流会把制品记到别人名下,宁可报错。
+    """
+    if explicit:
+        return explicit
+    if ME:
+        try:
+            return str(_get("/session/" + urllib.parse.quote(ME) + "/situation").get("domain") or "")
+        except Exception:
+            pass
+    here = os.path.realpath(os.getcwd())
+    root = os.path.join(os.path.realpath(WORKSPACE), "domains") + os.sep
+    if here.startswith(root):
+        return here[len(root):].split(os.sep)[0]
+    return ""
+
+
+def main(argv=None):
+    ap = argparse.ArgumentParser(prog="desk-artifact", description=__doc__,
+                                 formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--domain", default="", help="工作流 id;默认按当前会话解析")
+    sub = ap.add_subparsers(dest="cmd", required=True)
+    sub.add_parser("dir", help="打印制品目录(不存在则创建)")
+    sub.add_parser("list", help="列出当前清单")
+    p_link = sub.add_parser("link", help="登记一条外部产出")
+    p_link.add_argument("url")
+    p_link.add_argument("--title", default="")
+    p_link.add_argument("--note", default="")
+    p_link.add_argument("--kind", default="link", help="doc/demo/page/image/data/link")
+    p_note = sub.add_parser("note", help="给某一件补标题或说明")
+    p_note.add_argument("ref", help="文件名(制品目录下的直接子项)或外部链接")
+    p_note.add_argument("--title", default="")
+    p_note.add_argument("--note", default="")
+    p_note.add_argument("--kind", default="")
+    p_hide = sub.add_parser("hide", help="从清单里收起(不删文件)")
+    p_hide.add_argument("ref")
+    args = ap.parse_args(argv)
+
+    domain = resolve_domain(args.domain)
+    if not domain:
+        print("认不出当前工作流,请带 --domain", file=sys.stderr)
+        return 2
+
+    if args.cmd == "dir":
+        path = os.path.join(WORKSPACE, "domains", domain.split(":")[0], "artifacts")
+        os.makedirs(path, exist_ok=True)
+        print(path)
+        return 0
+
+    try:
+        if args.cmd == "list":
+            data = _get("/workbench/artifacts?domain=" + urllib.parse.quote(domain))
+            for item in data.get("items") or []:
+                print(f"{item.get('kind', ''):6} {item.get('title', '')}  {item.get('ref', '')}")
+            return 0
+        if args.cmd == "link":
+            body = {"domain": domain, "op": "link", "url": args.url, "title": args.title,
+                    "note": args.note, "kind": args.kind, "session": ME}
+        elif args.cmd == "note":
+            body = {"domain": domain, "op": "meta", "ref": args.ref, "title": args.title,
+                    "note": args.note, "kind": args.kind}
+        else:
+            body = {"domain": domain, "op": "hide", "ref": args.ref}
+        out = _post("/workbench/artifacts", body)
+    except urllib.error.URLError as e:
+        print(f"Desk 没有响应({e});制品目录仍可直接写文件", file=sys.stderr)
+        return 1
+    if not out.get("ok"):
+        print(out.get("error") or "登记失败", file=sys.stderr)
+        return 1
+    print("已登记:" + str((out.get("entry") or {}).get("ref") or ""))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

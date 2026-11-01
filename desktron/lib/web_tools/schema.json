@@ -1,0 +1,221 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://desktron.local/schemas/web-tools-v1.1.json",
+  "title": "Desktron Web Tool Evidence v1.1",
+  "oneOf": [
+    { "$ref": "#/$defs/searchSuccess" },
+    { "$ref": "#/$defs/fetchSuccess" },
+    { "$ref": "#/$defs/searchFailure" },
+    { "$ref": "#/$defs/fetchFailure" }
+  ],
+  "$defs": {
+    "base": {
+      "type": "object",
+      "required": ["schema_version", "tool_version", "tool", "provider", "transport", "content_trust", "browser_recommended", "status", "requested_at", "failure_reason"],
+      "properties": {
+        "schema_version": { "const": "1.1" },
+        "tool_version": { "type": "string" },
+        "tool": { "enum": ["web_search", "web_fetch"] },
+        "provider": { "type": "string" },
+        "transport": { "enum": ["direct_http", "app_control_browser"] },
+        "content_trust": { "const": "untrusted_web_content" },
+        "browser_recommended": { "type": "boolean" },
+        "status": { "enum": ["success", "error"] },
+        "requested_at": { "type": "string", "format": "date-time" },
+        "failure_reason": { "type": ["string", "null"] },
+        "diagnostics": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "open_ms": { "type": "integer", "minimum": 0 },
+            "inspect_ms": { "type": "integer", "minimum": 0 },
+            "parse_ms": { "type": "integer", "minimum": 0 },
+            "cleanup_ms": { "type": "integer", "minimum": 0 },
+            "provider_ms": { "type": "integer", "minimum": 0 },
+            "validate_urls_ms": { "type": "integer", "minimum": 0 },
+            "inspections": { "type": "integer", "minimum": 0 },
+            "snapshot_nodes": { "type": "integer", "minimum": 0 },
+            "snapshot_truncated": { "type": "boolean" },
+            "cleanup_failed": { "type": "boolean" },
+            "operation_pending": { "type": "boolean" },
+            "open_outcome_unknown": { "type": "boolean" }
+          }
+        }
+      }
+    },
+    "citation": {
+      "type": "object",
+      "required": ["id", "url", "title", "retrieved_at"],
+      "properties": {
+        "id": { "type": "string" },
+        "url": { "type": "string" },
+        "title": { "type": "string" },
+        "retrieved_at": { "type": "string", "format": "date-time" }
+      },
+      "additionalProperties": false
+    },
+    "failure": {
+      "type": "object",
+      "required": ["code", "message", "retryable"],
+      "properties": {
+        "code": { "type": "string" },
+        "message": { "type": "string" },
+        "retryable": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+    "redirectChain": {
+      "type": "array",
+      "maxItems": 4,
+      "items": {
+        "type": "object",
+        "required": ["url", "status"],
+        "properties": {
+          "url": { "type": "string" },
+          "status": { "type": "integer", "minimum": 100, "maximum": 599 }
+        },
+        "additionalProperties": false
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "required": ["kind"],
+      "properties": {
+        "kind": { "enum": ["user_input", "search_result", "page_link"] },
+        "depth": { "type": "integer", "minimum": 0, "maximum": 2 },
+        "query": { "type": "string" },
+        "citation_id": { "type": "string" },
+        "parent_url": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "truncation": {
+      "type": ["object", "null"],
+      "required": ["output_bytes", "total_bytes", "output_lines", "total_lines"],
+      "properties": {
+        "output_bytes": { "type": "integer", "minimum": 0 },
+        "total_bytes": { "type": "integer", "minimum": 0 },
+        "output_lines": { "type": "integer", "minimum": 0 },
+        "total_lines": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "searchSuccess": {
+      "unevaluatedProperties": false,
+      "allOf": [
+        { "$ref": "#/$defs/base" },
+        {
+          "type": "object",
+          "required": ["searched_at", "query", "result_count", "results", "content_hash", "http_status", "content_type", "redirect_chain", "provider_request_id"],
+          "properties": {
+            "tool": { "const": "web_search" },
+            "status": { "const": "success" },
+            "failure_reason": { "type": "null" },
+            "searched_at": { "type": "string", "format": "date-time" },
+            "query": { "type": "string" },
+            "result_count": { "type": "integer", "minimum": 0, "maximum": 10 },
+            "content_hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+            "http_status": { "type": ["integer", "null"] },
+            "content_type": { "type": "string" },
+            "redirect_chain": { "$ref": "#/$defs/redirectChain" },
+            "provider_request_id": { "type": ["string", "null"] },
+            "results": {
+              "type": "array",
+              "maxItems": 10,
+              "items": {
+                "type": "object",
+                "required": ["rank", "title", "url", "snippet", "published_at", "content_hash", "citation"],
+                "properties": {
+                  "rank": { "type": "integer", "minimum": 1 },
+                  "title": { "type": "string" },
+                  "url": { "type": "string" },
+                  "snippet": { "type": "string" },
+                  "published_at": { "type": ["string", "null"] },
+                  "content_hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+                  "citation": { "$ref": "#/$defs/citation" }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        }
+      ]
+    },
+    "fetchSuccess": {
+      "unevaluatedProperties": false,
+      "allOf": [
+        { "$ref": "#/$defs/base" },
+        {
+          "type": "object",
+          "required": ["fetched_at", "url", "final_url", "title", "content_type", "http_status", "redirect_chain", "content_hash", "content_bytes", "quoted_text", "content_trust", "truncated", "truncation", "provenance", "discovered_links", "citation"],
+          "properties": {
+            "tool": { "const": "web_fetch" },
+            "status": { "const": "success" },
+            "failure_reason": { "type": "null" },
+            "fetched_at": { "type": "string", "format": "date-time" },
+            "url": { "type": "string" },
+            "final_url": { "type": "string" },
+            "title": { "type": "string" },
+            "content_type": { "enum": ["text/html", "application/xhtml+xml", "text/plain"] },
+            "http_status": { "type": "integer" },
+            "redirect_chain": { "$ref": "#/$defs/redirectChain" },
+            "content_hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+            "content_bytes": { "type": "integer", "minimum": 0 },
+            "quoted_text": { "type": "string" },
+            "content_trust": { "const": "untrusted_web_content" },
+            "truncated": { "type": "boolean" },
+            "truncation": { "$ref": "#/$defs/truncation" },
+            "provenance": { "$ref": "#/$defs/provenance" },
+            "discovered_links": { "type": "array", "maxItems": 100, "items": { "type": "string" } },
+            "citation": { "$ref": "#/$defs/citation" }
+          }
+        }
+      ]
+    },
+    "searchFailure": {
+      "unevaluatedProperties": false,
+      "allOf": [
+        { "$ref": "#/$defs/base" },
+        {
+          "type": "object",
+          "required": ["searched_at", "query", "result_count", "results", "failure"],
+          "properties": {
+            "tool": { "const": "web_search" },
+            "status": { "const": "error" },
+            "searched_at": { "type": "string", "format": "date-time" },
+            "query": { "type": "string" },
+            "result_count": { "const": 0 },
+            "results": { "type": "array", "maxItems": 0 },
+            "failure": { "$ref": "#/$defs/failure" }
+          }
+        }
+      ]
+    },
+    "fetchFailure": {
+      "unevaluatedProperties": false,
+      "allOf": [
+        { "$ref": "#/$defs/base" },
+        {
+          "type": "object",
+          "required": ["fetched_at", "url", "final_url", "title", "content_type", "http_status", "redirect_chain", "content_hash", "quoted_text", "content_trust", "truncated", "failure"],
+          "properties": {
+            "tool": { "const": "web_fetch" },
+            "status": { "const": "error" },
+            "fetched_at": { "type": "string", "format": "date-time" },
+            "url": { "type": "string" },
+            "final_url": { "type": ["string", "null"] },
+            "title": { "type": "string" },
+            "content_type": { "type": ["string", "null"] },
+            "http_status": { "type": ["integer", "null"] },
+            "redirect_chain": { "$ref": "#/$defs/redirectChain" },
+            "content_hash": { "type": ["string", "null"] },
+            "quoted_text": { "type": "string" },
+            "content_trust": { "const": "untrusted_web_content" },
+            "truncated": { "type": "boolean" },
+            "failure": { "$ref": "#/$defs/failure" }
+          }
+        }
+      ]
+    }
+  }
+}

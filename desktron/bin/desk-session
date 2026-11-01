@@ -1,0 +1,64 @@
+#!/usr/bin/env python3
+"""管理当前 Desk 会话。"""
+import argparse
+import json
+import os
+import sys
+import urllib.error
+import urllib.parse
+import urllib.request
+
+PORT = os.environ.get("DESKTRON_UI_PORT", "7765")
+BASE = f"http://127.0.0.1:{PORT}"
+ME = os.environ.get("DESKTRON_SESSION_ID", "")
+
+
+def _post(path, body):
+    req = urllib.request.Request(BASE + path, method="POST",
+        data=json.dumps(body, ensure_ascii=False).encode("utf-8"),
+        headers={"content-type": "application/json"})
+    try:
+        with urllib.request.urlopen(req, timeout=20) as response:
+            return json.loads(response.read().decode("utf-8") or "{}")
+    except urllib.error.HTTPError as exc:
+        try:
+            detail = json.loads(exc.read().decode("utf-8") or "{}")
+        except Exception:
+            detail = {"error": str(exc)}
+        raise RuntimeError(detail.get("error") or str(exc))
+    except urllib.error.URLError as exc:
+        raise RuntimeError(f"无法连接 Desk：{exc.reason}")
+
+
+def cmd_rename(args):
+    sid = (args.session or ME).strip()
+    if not sid:
+        print("当前会话身份未知，请使用 --session 指定会话 ID", file=sys.stderr)
+        return 2
+    try:
+        result = _post("/workbench/sessions/" + urllib.parse.quote(sid, safe="") + "/title",
+                       {"title": args.title})
+    except Exception as exc:
+        print(str(exc), file=sys.stderr)
+        return 1
+    if not result.get("ok"):
+        print(result.get("error") or "会话重命名失败", file=sys.stderr)
+        return 1
+    print(json.dumps({"ok": True, "session_id": result.get("session_id") or sid,
+                      "title": result.get("title", args.title.strip()[:80])}, ensure_ascii=False))
+    return 0
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(prog="desk-session", description=__doc__)
+    commands = parser.add_subparsers(dest="command", required=True)
+    rename = commands.add_parser("rename", help="重命名会话；默认修改当前会话")
+    rename.add_argument("title", help="新名称；传空字符串可清除手动名称")
+    rename.add_argument("--session", "-s", default="", help="会话 ID；默认取当前会话")
+    rename.set_defaults(fn=cmd_rename)
+    args = parser.parse_args(argv)
+    return args.fn(args)
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

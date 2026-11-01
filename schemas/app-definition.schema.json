@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://desktron.local/schemas/app-definition.schema.json",
+  "title": "Desktron App Definition Operability Contract",
+  "type": "object",
+  "required": ["id", "label", "agent_operability"],
+  "properties": {
+    "id": { "type": "string", "pattern": "^[a-z0-9_-]+$" },
+    "label": { "type": "string", "minLength": 1 },
+    "agent_operability": { "enum": ["none", "L1", "L2", "L3", "L4"] },
+    "agent_operability_reason": { "type": "string", "minLength": 1 },
+    "agent_control": { "$ref": "agent-control.schema.json" }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "agent_operability": { "const": "none" } } },
+      "then": {
+        "required": ["agent_operability_reason"],
+        "not": { "required": ["agent_control"] }
+      },
+      "else": { "required": ["agent_control"] }
+    },
+    {
+      "if": { "properties": { "agent_operability": { "const": "L1" } }, "required": ["agent_operability"] },
+      "then": { "properties": { "agent_control": { "allOf": [{ "$ref": "agent-control.schema.json" }, { "properties": { "level": { "const": "L1" } } }] } } }
+    },
+    {
+      "if": { "properties": { "agent_operability": { "const": "L2" } }, "required": ["agent_operability"] },
+      "then": { "properties": { "agent_control": { "allOf": [{ "$ref": "agent-control.schema.json" }, { "properties": { "level": { "const": "L2" } } }] } } }
+    },
+    {
+      "if": { "properties": { "agent_operability": { "const": "L3" } }, "required": ["agent_operability"] },
+      "then": { "properties": { "agent_control": { "allOf": [{ "$ref": "agent-control.schema.json" }, { "properties": { "level": { "const": "L3" } } }] } } }
+    },
+    {
+      "if": { "properties": { "agent_operability": { "const": "L4" } }, "required": ["agent_operability"] },
+      "then": { "properties": { "agent_control": { "allOf": [{ "$ref": "agent-control.schema.json" }, { "properties": { "level": { "const": "L4" } } }] } } }
+    }
+  ]
+}

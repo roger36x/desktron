@@ -1,0 +1,126 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://desktron.local/schemas/agent-control.schema.json",
+  "title": "Desktron Agent Control Manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["protocol", "identity", "level", "resources", "observations", "actions", "permissions", "events", "receipts"],
+  "properties": {
+    "protocol": { "const": "desk.app-control/v1alpha1" },
+    "identity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["app", "version", "adapter"],
+      "properties": {
+        "app": { "type": "string", "pattern": "^[a-zA-Z0-9._-]+$" },
+        "version": { "type": "string", "minLength": 1 },
+        "adapter": { "type": "string", "pattern": "^[a-zA-Z0-9._/-]+$" }
+      }
+    },
+    "level": { "enum": ["L1", "L2", "L3", "L4"] },
+    "native_application": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["bundle_id", "target_binding", "code_requirement", "projector",
+                   "allowed_roles", "allowed_semantics", "allowed_values"],
+      "properties": {
+        "bundle_id": { "type": "string", "minLength": 1, "not": { "const": "*" } },
+        "target_binding": {
+          "const": ["bundle_id", "pid", "window_id"]
+        },
+        "code_requirement": { "type": "string", "minLength": 1, "maxLength": 1024 },
+        "projector": { "enum": ["ax-structural/v1"] },
+        "allowed_roles": { "$ref": "#/$defs/nativeNames" },
+        "allowed_semantics": { "$ref": "#/$defs/nativeNames" },
+        "allowed_values": { "$ref": "#/$defs/nativeNames" },
+        "label_values": {
+          "type": "object",
+          "maxProperties": 64,
+          "additionalProperties": { "type": "string", "pattern": "^[a-zA-Z0-9._/-]+$" }
+        }
+      }
+    },
+    "resources": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["type", "scope"],
+        "properties": {
+          "type": { "type": "string", "pattern": "^[a-zA-Z0-9._-]+$" },
+          "scope": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "observations": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "schema"],
+        "properties": {
+          "name": { "type": "string", "pattern": "^[a-zA-Z0-9._-]+$" },
+          "schema": { "type": "string", "minLength": 1 },
+          "input_schema": { "type": "object" },
+          "redaction": { "type": "string" },
+          "sensitive": { "type": "boolean" }
+        }
+      }
+    },
+    "actions": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/action" }
+    },
+    "permissions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["delegation", "lease", "user_interaction", "takeover"],
+      "properties": {
+        "delegation": { "const": "explicit" },
+        "lease": { "enum": ["exclusive"] },
+        "user_interaction": { "enum": ["pause", "revoke"] },
+        "takeover": { "const": "user_confirmed" }
+      }
+    },
+    "events": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "enum": ["ready", "changed", "action_completed", "failed", "waiting_user", "lease_revoked"] }
+    },
+    "receipts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["required", "undo_when_declared"],
+      "properties": {
+        "required": { "const": true },
+        "undo_when_declared": { "type": "boolean" }
+      }
+    }
+  },
+  "$defs": {
+    "nativeNames": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "type": "string", "pattern": "^[a-zA-Z0-9._/-]+$" }
+    },
+    "action": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "effect", "timeout_ms", "idempotency"],
+      "properties": {
+        "name": { "type": "string", "pattern": "^[a-zA-Z0-9._-]+$" },
+        "effect": { "enum": ["read_only", "reversible_write", "external_write", "destructive"] },
+        "approval": { "enum": ["never", "risk_based", "always"] },
+        "timeout_ms": { "type": "integer", "minimum": 100, "maximum": 300000 },
+        "idempotency": { "enum": ["none", "keyed", "required"] },
+        "input_schema": { "type": "object" },
+        "output_schema": { "type": "object" },
+        "preconditions": { "type": "array", "items": { "type": "string" } },
+        "undo_action": { "type": "string" }
+      }
+    }
+  }
+}

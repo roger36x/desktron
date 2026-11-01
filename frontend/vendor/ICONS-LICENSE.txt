@@ -1,0 +1,229 @@
+本文件登记当前图标及明确保留的历史来源通知，不代表文中所有历史文件仍随源码分发。
+2026-10-22清理：旧浏览器、文件浏览器、IDE、文件夹、文档、分支及光标等33份无当前产品或可执行测试依赖的图稿已移出源码；下方涉及已移除文件的来源说明仅作为历史记录。当前图稿以实际调用和对应原创清单为准。旧入口 app-terminal.png 及仍被测试使用的同源 SVG 基线未删除。
+
+已评审剩余内联图标（25项独立重绘，直纬线间距7.8格）
+  浏览器5项、聊天14项、安排6项，全部独立绘制；不采用此前11项复用建议。
+  32格批准SVG与产品SVG摘要见 remaining-inline-icon-manifest.json，批准源文件见 icons/reviewed-remaining/。
+  保留调用处原显示尺寸，子组固定描边；圆框和经线不变，地球两条水平纬线间距7.8格。
+  原创fork蒙版保持不变；当前另一组清单为39项普通符号与2项引擎识别符，已排除随Timeline退役移除的专用图形。
+  本组随项目采用Apache-2.0，仍受项目权属确认限制。
+
+已评审自绘内联图标（V2 与 A/C 斜短线外圈）
+  39枚普通符号及2枚引擎识别符已接入，制作方式与摘要见 original-inline-icon-manifest.json。
+  其中10项复用或镜像此前自绘定稿；其余普通图形按语义独立构造；A/C沿用自绘字母并新增24段细短斜线。
+  仅根元素尺寸、无障碍元数据及固定描边包装适配产品，已批准几何不变。
+  随项目采用 Apache-2.0；制作记录不代替全部代码与素材权属确认。
+  保留旧工作流动态键 ICONS.zap，Feather 4.29.2／MIT，来源见 inline-icon-sources.json，
+  许可全文见 licenses/feather-LICENSE.txt。其余原18项中的17项已替换，不再登记为当前 Feather 图形。
+  Claude/Codex 当前为本项目自绘 A/C；Pi/Shepherd现有图形未改，状态见 brand-icon-sources.json。
+  Pi像素标识保留不变，其4×4占用几何与 Pi Coding Agent 1.2.0 的 pi-logo.ts 一致，非通用π字体字形。
+  上游固定为 v1.2.0／06a466935536f8c9bcacb2d5efc0fc021be1bdff；MIT全文见 licenses/pi-1.2.0-LICENSE.txt。
+  当前SVG为单色矩形适配，不是上游SVG字节匹配；来源与摘要见 brand-icon-sources.json。
+  项目许可不授予第三方商标权，也不表示引擎厂商背书。
+
+Desktron 原创圆润界面图标（2026-10-18，定稿组合 V2 / V4 / V5 / V6）
+  16枚均由独立编写的SVG导出512px透明PNG，未提取旧图的像素或路径。
+  SVG、PNG及SHA-256清单位于 frontend/icons/rounded-original-manifest.json。
+  下列同名.png与.svg为本次原创资源，随项目使用Apache-2.0许可：
+    composer-mode、composer-lock、task、current-session-task、arrangement、status、
+    status-alert、status-login、sidebar-chat、sidebar-apps、sidebar-settings、
+    menu-rename、menu-delete、menu-memory、right-arrow、chat-branch-4626029。
+  当前会话任务使用V4方形外框；聊天、安排、状态使用V5；设置使用V6加长齿形；其余使用V2。
+  V7统一校准16枚图标的视觉占比：仅作整体等比缩放和居中，不改上述已确认细节；
+  缩放以外轮廓面积为参考，限制最长边避免裁切，保留狭长图形的原有比例。
+  V8整套复核保留其余15枚，安排在V7基础上等比放大6%，补偿顶端挂环造成的主体偏小；
+  不改六点排布及已确认造型。托盘0.5px中线补偿只保留在CSS，不写入图标资源。
+  V9采用方案C：安排主体加宽、顶栏变浅、六点略缩小并重新分布；聊天在V8基础上整体缩小3%。
+  其余14枚及现有CSS尺寸、中线补偿不变；历史V5/V8细节以V9修订为准。
+  沿用原PNG路径以保持桌面和手机CSS蒙版兼容；chat-branch-4626029仅为兼容文件名，
+  当前内容不再是Flaticon git_4626029。以下对应这些路径的Flaticon条目仅记录替换前素材。
+  本次不清理其他旧素材或Git历史，不改变其第三方许可，也不据此声明整仓可公开发行。
+
+Desktron 补充自绘图标（2026-10-19，V4 定稿）
+  本组由独立 SVG 导出 512px 透明 PNG，随项目采用 Apache-2.0 许可。
+  browser → frontend/icons/app-browser-original-5d5d9b828321.svg / .png
+  move → frontend/icons/menu-move.svg / .png（圆角正方形，箭头长度为边长一半）
+  bell → frontend/icons/bell.svg / .png（主体改为实心，保留原外轮廓、尺寸与对齐）
+  shepherd → frontend/icons/shepherd.svg / .png（侧脸双竖耳，耳内实心）
+  root-folder → frontend/icon-folder.svg / .png（复用原创 IDE 蓝色闭合文件夹）
+  根目录用于 IDE 目录标签；文件浏览器的橙色目录保持不变。
+  文件与 SHA-256 对应 frontend/icons/supplemental-original-manifest.json。
+  本组保留原有 CSS 使用尺寸和对齐；下文 menu-move 和旧浏览器条目仅为替换前记录。
+
+Desktron 原创 Monaco IDE 应用图标（2026-10-19，极简代码定稿）
+  frontend/icons/app-monaco-ide-original-00700ed9f4c1.svg / .png
+  从本项目自绘试稿中的代码符号几何独立导出；白色超椭圆底板、灰色括号（#808080）、橘红色斜杠（#F26A3D）。
+  V7 外轮廓与应用共用 _AP_SQUIRCLE 一致；按用户要求将代码符号线宽从4.4加粗至5.4，路径与位置不变，素材及显示均不添加阴影。
+  无标题栏、侧栏、正文横杠或额外底板；512×512 PNG 与可编辑 SVG 随项目采用 Apache-2.0 许可。
+  文件及 SHA-256 对应 frontend/icons/monaco-ide-original-manifest.json。
+  已替换 app-assets-apps.js 中旧文件轮廓与 IDE 标签图形，不改变旧图历史对象的权利状态。
+
+历史品牌试稿（当前文件已替换为台灯图标）— pencil 564229 (历史素材的品牌用途与再分发许可尚未确认)
+  作者 Magnific；来源 https://www.flaticon.com/free-icon/pencil_564229
+  原图 https://cdn-icons-png.flaticon.com/512/564/564229.png
+  原始资源 SHA-256: b7368b87eb94926f75535fd338cf7a9c48efbdac396fcca77474a5be0247a59a
+  历史使用位置: frontend/brand-logo.png、brand-logo-light.png、icon-180.png、icon-192.png、icon-512.png；
+            desktop/icons/icon.png、icon.icns。
+  修改: 保留此前圆形透明轮廓与左右配色，只改新原图蓝色圆底；竖直铅笔保留黄色笔身、灰色木质与深色笔尖。
+  圆底左 #FF7754、右 #FF4D22；界面 logo 与 desktop/icons/icon.png 圆外透明。
+  macOS ICNS 加纯白 #FFFFFF 圆角底板，无内部渐变；网页主屏 icon-{180,192,512}.png
+  复用原生图案与留白，透明区域铺成纯白，圆角由手机系统裁切。
+  来源页经匿名 App Control 核对(2026-10-06)，显示 Magnific、Flaticon License、Attribution is required。
+  署名: designed by Magnific from Flaticon
+        https://www.flaticon.com/free-icon/pencil_564229
+  下载证书注明 Free for commercial use WITH ATTRIBUTION，允许修改，限制转让、再许可与素材分发。
+  原始证书仅在本机保存，不提交。此记录不证明已获得品牌、商标用途或开源再分发授权。
+  临时纳入私有协作仓用于跨平台开发；仓库私有不扩大第三方许可范围。
+  当前品牌文件已替换；公开 Git 历史仍不得保留本试稿素材。
+  此资源不受 Desktron 的 Apache-2.0 许可覆盖。
+
+历史 Lucide (https://lucide.dev) — ISC License
+  原登记的 _BR_ICON_COMPASS 已不在当前产品源码中；下列文本仅保留为历史通知。
+  不将该许可自动套用于当前 _BR_ICON_GLOBE 或其他未经上游比对的图形。
+
+  ISC License
+
+  Copyright (c) for portions of Lucide are held by Cole Bemis 2013-2022 as
+  part of Feather (MIT). All other copyright (c) for Lucide are held by
+  Lucide Contributors 2022.
+
+  Permission to use, copy, modify, and/or distribute this software for any
+  purpose with or without fee is hereby granted, provided that the above
+  copyright notice and this permission notice appear in all copies.
+
+  THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+  WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+  MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+  ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+  WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+  ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+
+历史移动到素材（当前路径内容已由 V4 替换）
+  input-icon.png → frontend/icons/menu-move.png(会话菜单「移动到…」)
+                   用户提供的 512px 透明 PNG 原图未改动,以 CSS 单色蒙版呈现。
+                   来源文件 input-icon.png;本次未提供作者、下载网址与许可证明,不沿用旧图归属。
+
+OpenDesk 原创图形
+  terminal → frontend/icons/app-terminal-3b65e9edf830.png(终端 App)
+             frontend/icons/app-terminal.png 保留为旧入口兼容素材。
+             独立绘制的 512×512 透明 PNG；512×512 正方形圆角底板（去除外围留白）、白色 >_、
+             渐隐高光，无外投影。应用列表、程序坞和终端标签共用，不额外染色或叠底。
+             造型参考 https://www.flaticon.com/free-icon/terminals_6996035，
+             未使用参考图片的像素或路径；边缘质感参考用户提供的台灯截图。
+
+Flaticon (https://www.flaticon.com) — Flaticon Free License,须署名
+  web 4305021 → frontend/icons/app-browser-web-4305021-purple-white.png(官方浏览器 App)
+                作者 redempticon,风格 Redempticon Fill & Lineal。
+                来源 https://www.flaticon.com/free-icon/web_4305021
+                512px PNG 底色为当前浏览器主紫色 #5e59e2，中央地球镂空改为白色 #ffffff；
+                保留紫色区域、外缘透明通道和形状。保留的 purple.png 为修改前的回归对照图。
+                详情页经匿名浏览器核对(2026-10-03),许可要求署名。
+                历史使用 app-browser-globe-3bb44152ef74.png：保留上述素材的紫底，
+                外缘改用工作台共用 _AP_SQUIRCLE 超椭圆，尺寸、色值及中央地球像素不变。
+                app-browser-globe-005cc9f74465.png 保留为圆角修改前的回归对照图。
+                中央地球来自用户于 2026-10-16 提供的单赤道、椭圆经线图案；提取其线条并改为白色。
+                用户参考图未提供作者、下载来源或许可证明，不将该地球图案归属给 redempticon，
+                也不据此声明新增图案获得了公开再分发许可。
+  git 4626029 → frontend/icons/chat-branch-4626029.png(聊天回复操作行「分支」)
+                作者 Creatype，风格 Creatype Basic Outline。
+                来源 https://www.flaticon.com/free-icon/git_4626029
+                原图 https://cdn-icons-png.flaticon.com/512/4626/4626029.png
+                512px 透明 PNG 原图未改动，以 CSS 单色蒙版跟随主题与悬停颜色。
+                SHA-256: 6cd5f491a52bb21427c90b603f0aebca29b262d936a4f0338e5f6b539994a52d
+                详情页经匿名 App Control 核对(2026-10-16)，标注 Flaticon License、Attribution is required。
+                署名：Git icon designed by Creatype from Flaticon。
+                此记录不代表取得素材公开再分发或再许可授权，不受项目 Apache-2.0 覆盖。
+  branch 6729563 → frontend/icons/chat-branch-6729563.png(保留的旧聊天分支图标)
+                  作者 Magnific，风格 Basic Straight Lineal。
+                  来源 https://www.flaticon.com/free-icon/branch_6729563
+                  原图 https://cdn-icons-png.flaticon.com/512/6729/6729563.png
+                  512px 透明 PNG 原图未改动，以 CSS 单色蒙版跟随主题与悬停颜色。
+                  SHA-256: d5e8f37e2d5da97d3f41bb9b84a5342c05bcf5f23bb2edc47267ac7b0d7ab1a4
+                  详情页经匿名 App Control 核对(2026-10-16)，标注 Flaticon License、Attribution is required。
+                  署名：Branch icon designed by Magnific from Flaticon。
+                  此记录不代表取得素材公开再分发或再许可授权，不受项目 Apache-2.0 覆盖。
+  聊天输入区与菜单指定图标(512px PNG,以透明通道作 CSS 单色蒙版):
+    random 7313741 → frontend/icons/composer-mode.png
+      作者 Sebastian Belalcazar,风格 Basic Outline。
+      来源 https://www.flaticon.com/free-icon/random_7313741
+    padlock 747305 → frontend/icons/composer-lock.png
+      来源 https://www.flaticon.com/free-icon/padlock_747305
+    draw 12377828 → frontend/icons/menu-rename.png
+      作者 DenovoAgency,风格 Others。
+      来源 https://www.flaticon.com/free-icon/draw_12377828
+    delete 3405244 → frontend/icons/menu-delete.png
+      作者 Ilham Fitrotul Hayat,风格 Basic Outline。
+      来源 https://www.flaticon.com/free-icon/delete_3405244
+    next 130884 → frontend/icons/right-arrow.png
+      用户指定的 512px PNG,作为可见 UI 的通用方向图标及 CSS 单色蒙版。
+      来源 https://www.flaticon.com/free-icon/next_130884
+  check → frontend/icons/task.png(会话输入区「任务」,经 CSS 蒙版着色)
+          作者 Graphics Plazza,风格 Basic Outline。
+          出处 https://www.flaticon.com/free-icon/check_9068247 ,取 512px PNG 原图未改动。
+  checklist → frontend/icons/current-session-task.png(「当前会话的任务」标题,经 CSS 蒙版着色)
+              作者 Graphics Plazza,风格 Black Outline。
+              出处 https://www.flaticon.com/free-icon/checklist_9741134 ,取 512px PNG 原图未改动。
+  calendar → frontend/icons/arrangement.png(会话输入区「安排」,经 CSS 蒙版着色)
+             作者 Graphics Plazza,风格 Grey;蒙版渲染时统一为单色。
+             出处 https://www.flaticon.com/free-icon/calendar_9308104 ,取 512px PNG 原图未改动。
+  status → frontend/icons/status.png(会话输入区「状态」,经 CSS 蒙版着色)
+           作者 Graphics Plazza,风格 Basic Outline。
+           出处 https://www.flaticon.com/free-icon/status_8917343 ,取 512px PNG 原图未改动。
+  warning → frontend/icons/status-alert.png(会话输入区「状态」异常态,经 CSS 蒙版着色)
+             作者 Graphics Plazza,风格 Basic Outline。
+             出处 https://www.flaticon.com/free-icon/warning_9068127 ,取 512px PNG 原图未改动。
+  key → frontend/icons/status-login.png(会话输入区「状态」登录态,经 CSS 蒙版着色)
+         作者 Graphics Plazza,风格 Basic Outline。
+         出处 https://www.flaticon.com/free-icon/key_8555135 ,取 512px PNG 原图未改动。
+  chat → frontend/icons/sidebar-chat.png(左侧栏「聊天」入口,经 CSS 蒙版着色)
+          作者 Graphics Plazza,风格 Basic Outline。
+          出处 https://www.flaticon.com/free-icon/chat_8800042 ,取 512px PNG 原图未改动。
+  apps → frontend/icons/sidebar-apps.png(左侧栏「应用」入口,经 CSS 蒙版着色)
+          作者 Graphics Plazza,风格 Basic Outline。
+          出处 https://www.flaticon.com/free-icon/apps_8917404 ,取 512px PNG 原图未改动。
+  settings → frontend/icons/sidebar-settings.png(左侧栏「设置」入口,经 CSS 蒙版着色)
+              作者 Freepik。
+              出处 https://www.flaticon.com/free-icon/settings_2099058 ,取 512px PNG 原图未改动。
+  writing → frontend/icons/menu-memory.png(工作流右键菜单「查看记忆」,经 CSS 蒙版着色)
+             作者 Magnific。
+             出处 https://www.flaticon.com/free-icon/writing_1001371 ,取 512px PNG 原图未改动(2026-10-04)。
+  document 2258853 → frontend/icons/file-browser-document-2258853.png(文件浏览器侧栏文件)
+                    作者 Magnific，风格 Basic Rounded Lineal。
+                    来源 https://www.flaticon.com/free-icon/document_2258853
+                    原始 512px PNG 未改动，CSS 透明通道蒙版随主题呈灰色。
+  folder 8316630 → frontend/icons/file-browser-folder-8316630.png(文件浏览器侧栏全部目录)
+                   作者 juicy_fish，风格 Juicy Fish Flat。
+                   来源 https://www.flaticon.com/free-icon/folder_8316630
+  folder 11471391 → frontend/icons/ide-folder-11471391.png(IDE 侧栏全部目录)
+                    作者 juicy_fish，风格 Juicy Fish Flat。
+                    来源 https://www.flaticon.com/free-icon/folder_11471391
+  上述三枚取 512px 透明 PNG 原图，彩色文件夹不染色、不改比例。
+  详情页经匿名 App Control 核对(2026-10-16)，均标注 Flaticon License、Attribution is required。
+  署名：Document icon designed by Magnific from Flaticon；Folder icons designed by juicy_fish from Flaticon。
+  此记录不扩大许可范围，不代表已获得素材公开再分发或再许可授权；不受项目 Apache-2.0 覆盖。
+  folder 3735057 → frontend/icons/file-browser-folder.png(保留的旧文件浏览器收起目录)
+                  作者 kmg design,风格 Kmg Design Flat。
+                  来源 https://www.flaticon.com/free-icon/folder_3735057
+  open-folder 12075377 → frontend/icons/file-browser-folder-open.png(保留的旧文件浏览器展开目录)
+                        作者 NajmunNahar,风格 NajmunNahar Color Fill。
+                        来源 https://www.flaticon.com/free-icon/open-folder_12075377
+  文件浏览器两枚均取 512px 彩色透明 PNG 原图未改动;仅 CSS 等比缩放补偿透明留白。
+  作者、风格及署名要求经公开详情页核对(2026-10-01)。
+  以上 Flaticon Free License 图标均要求署名。
+
+Desktron 原创文件图标（V16 本机试用稿）
+  由 Codex 直接编写独立 SVG，PNG 由 SVG 导出；未提取第三方图标的像素或路径。
+  主辅色沿用现有界面的配色；浏览器图标不在本次替换范围内。
+  每枚图标在 frontend/icons/ 下保留同名可编辑 SVG 和 512px 透明 PNG。
+  files → frontend/icons/app-file-browser-original-7710531b884e.png
+  folder → frontend/icons/file-browser-folder-closed-original-34d18b546b71.png
+  folder-open → frontend/icons/file-browser-folder-open-original-615e0fce22fa.png
+  ide-folder → frontend/icons/ide-folder-closed-original-905d2778fcb2.png
+  ide-folder-open → frontend/icons/ide-folder-open-original-b95c700a1abe.png
+  document → frontend/icons/file-browser-document-original-d8bd1e3d7169.png
+  上述新增原创图形随项目使用 Apache-2.0 许可。旧 Flaticon 文件及历史许可记录仍保留，未因此变更其许可。
+
+V13：文件浏览器应用图标由文件夹本体构成圆角矩形轮廓，无额外底板；黄色与蓝色目录图标保留V12的较宽比例与开合状态。
+V15：在V13基础上，仅降低面向用户的黄色前板顶部（128坐标系由32移至44），后板、三层纸张、外轮廓和配色不变。
+V16：在V15基础上，仅将三层纸张的圆角半径由5略增至8，位置、尺寸及文件夹外壳保持不变。

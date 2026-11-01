@@ -1,0 +1,117 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://desktron.local/schemas/prompt-capabilities.schema.json",
+  "title": "Desktron Prompt Capability Differences",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "kind", "defaults", "engines", "runtimes", "overrides"],
+  "properties": {
+    "version": { "const": 2 },
+    "kind": { "const": "desktron-prompt-capabilities" },
+    "defaults": { "$ref": "#/$defs/fullCapability" },
+    "engines": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["claude", "codex", "pi"],
+      "properties": {
+        "claude": { "$ref": "#/$defs/capabilityPatch" },
+        "codex": { "$ref": "#/$defs/capabilityPatch" },
+        "pi": { "$ref": "#/$defs/capabilityPatch" }
+      }
+    },
+    "runtimes": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["native", "shepherd"],
+      "properties": {
+        "native": { "$ref": "#/$defs/capabilityPatch" },
+        "shepherd": { "$ref": "#/$defs/capabilityPatch" }
+      }
+    },
+    "overrides": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "claude-native": { "$ref": "#/$defs/capabilityPatch" },
+        "claude-shepherd": { "$ref": "#/$defs/capabilityPatch" },
+        "codex-native": { "$ref": "#/$defs/capabilityPatch" },
+        "codex-shepherd": { "$ref": "#/$defs/capabilityPatch" },
+        "pi-native": { "$ref": "#/$defs/capabilityPatch" },
+        "pi-shepherd": { "$ref": "#/$defs/capabilityPatch" }
+      }
+    }
+  },
+  "$defs": {
+    "carrier": {
+      "enum": ["system_append", "system_snapshot", "developer_instructions", "application_context", "user_hidden_context", "user_prefix", "native_context"]
+    },
+    "carrierPatch": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "add": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/carrier" } },
+        "remove": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/carrier" } }
+      }
+    },
+    "nativeSources": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "default_prompt": { "type": "boolean" },
+        "context_files": { "type": "boolean" },
+        "repo_skills": { "type": "boolean" },
+        "global_skills": { "type": "boolean" }
+      }
+    },
+    "refresh": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "system": { "enum": ["process", "binding", "turn"] },
+        "turn": { "type": "boolean" },
+        "engine_entry": { "type": "boolean" }
+      }
+    },
+    "compression": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "preserves_system": { "type": "boolean" },
+        "preserves_turn_context": { "type": "boolean" },
+        "requires_reinject": { "type": "boolean" }
+      }
+    },
+    "fullCapability": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["carriers", "native_sources", "refresh", "compression"],
+      "properties": {
+        "carriers": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "$ref": "#/$defs/carrier" } },
+        "native_sources": {
+          "allOf": [{ "$ref": "#/$defs/nativeSources" }],
+          "required": ["default_prompt", "context_files", "repo_skills", "global_skills"]
+        },
+        "refresh": {
+          "allOf": [{ "$ref": "#/$defs/refresh" }],
+          "required": ["system", "turn", "engine_entry"]
+        },
+        "compression": {
+          "allOf": [{ "$ref": "#/$defs/compression" }],
+          "required": ["preserves_system", "preserves_turn_context", "requires_reinject"]
+        },
+        "notes": { "type": "string" }
+      }
+    },
+    "capabilityPatch": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "carriers": { "$ref": "#/$defs/carrierPatch" },
+        "native_sources": { "$ref": "#/$defs/nativeSources" },
+        "refresh": { "$ref": "#/$defs/refresh" },
+        "compression": { "$ref": "#/$defs/compression" },
+        "notes": { "type": "string" }
+      }
+    }
+  }
+}

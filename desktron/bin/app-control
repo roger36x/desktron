@@ -1,0 +1,354 @@
+#!/usr/bin/env python3
+"""Desk App Control CLI transport；权限与执行语义全部由 Runtime 强制。"""
+import argparse
+import hashlib
+import http.client
+import json
+import os
+import re
+import socket
+import sys
+import time
+import urllib.error
+import urllib.parse
+import urllib.request
+
+
+def endpoint():
+    value = os.environ.get("DESKTRON_UI_URL", "").rstrip("/")
+    if value:
+        return value
+    # 7765 是 UI/契约端口(ui_server 的第一个端口参数);7766 是终端 WebSocket 那一路,
+    # 打过去只会得到一个 404 页。Desk 里跑的回合都带 DESKTRON_UI_PORT,这里只是手工调试的兜底。
+    return "http://127.0.0.1:%s" % os.environ.get("DESKTRON_UI_PORT", "7765")
+
+
+class UnixHTTPConnection(http.client.HTTPConnection):
+    def __init__(self, path, timeout):
+        super().__init__("localhost", timeout=timeout)
+        self.unix_path = path
+
+    def connect(self):
+        self.sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        self.sock.settimeout(self.timeout)
+        self.sock.connect(self.unix_path)
+
+
+def _channel_connection(address, timeout):
+    """POSIX 使用 Unix Socket；Windows 使用已注入的专用回环通道。"""
+    if address.startswith("tcp:"):
+        host, _, port = address[4:].rpartition(":")
+        if host != "127.0.0.1" or not port.isdigit() or not 0 < int(port) < 65536:
+            raise RuntimeError("app_control_unavailable: 本地控制通道地址无效")
+        return http.client.HTTPConnection(host, int(port), timeout=timeout)
+    return UnixHTTPConnection(address, timeout)
+
+
+def _unix_request(path, data, headers, timeout):
+    socket_path = os.environ.get("DESKTRON_APP_CONTROL_SOCKET", "")
+    if not socket_path:
+        raise RuntimeError("app_control_unavailable: Desk 会话未提供本地控制通道")
+    conn = _channel_connection(socket_path, timeout)
+    try:
+        conn.request("POST" if data is not None else "GET", path, body=data, headers=headers)
+        response = conn.getresponse()
+        raw = response.read()
+        try:
+            payload = json.loads(raw or b"{}")
+        except Exception:
+            payload = {}
+        if response.status >= 400:
+            raise RuntimeError(payload.get("error") or "HTTP %d" % response.status)
+        return payload
+    except (OSError, http.client.HTTPException) as exc:
+        raise RuntimeError("app_control_unavailable: %s" % str(exc))
+    finally:
+        conn.close()
+
+
+def request(path, body=None, timeout=65):
+    data = json.dumps(body).encode("utf-8") if body is not None else None
+    headers = {"Content-Type": "application/json"}
+    capability = os.environ.get("DESKTRON_APP_CONTROL_SESSION_CAPABILITY", "")
+    if capability:
+        headers["X-Desk-App-Control-Session"] = capability
+        return _unix_request(path, data, headers, timeout)
+    req = urllib.request.Request(endpoint() + path, data=data,
+                                 headers=headers)
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as response:
+            return json.loads(response.read() or b"{}")
+    except urllib.error.HTTPError as exc:
+        try:
+            payload = json.loads(exc.read() or b"{}")
+        except Exception:
+            payload = {"error": "HTTP %d" % exc.code}
+        raise RuntimeError(payload.get("error") or "HTTP %d" % exc.code)
+
+
+def session_id(args):
+    value = args.session or os.environ.get("DESKTRON_SESSION_ID", "")
+    if not value:
+        raise RuntimeError("缺少会话身份；请在 Desk Agent 回合中运行，或显式传 --session")
+    return value
+
+
+def claim(args):
+    return request("/workbench/app-control/claim", {
+        "session_id": session_id(args), "app_id": args.app, "resource_id": args.resource,
+        "ttl_seconds": 900,
+    })
+
+
+def lease(args):
+    if args.lease:
+        return args.lease
+    return claim(args)["id"]
+
+
+def wait(operation, seconds, sid):
+    if operation.get("status") in ("succeeded", "failed", "rejected", "cancelled"):
+        return operation
+    query = urllib.parse.urlencode({"timeout": seconds, "session_id": sid})
+    return request("/workbench/app-control/operations/%s/wait?%s" %
+                   (urllib.parse.quote(operation["id"]), query), timeout=seconds + 5)
+
+
+def wait_terminal(operation, seconds, sid=""):
+    seconds = max(0, min(1800, int(seconds)))
+    if not seconds:
+        return wait(operation, 0, sid)
+    deadline = time.monotonic() + seconds
+    current = operation
+    while current.get("status") not in ("succeeded", "failed", "rejected", "cancelled"):
+        left = deadline - time.monotonic()
+        if left <= 0:
+            break
+        current = wait(current, min(55, max(1, int(left))), sid)
+    return current
+
+
+def read_sequence(path):
+    try:
+        with open(path, encoding="utf-8") as f:
+            value = json.load(f)
+    except Exception as exc:
+        raise RuntimeError("读取 sequence 失败:%s" % exc)
+    if not isinstance(value, dict) or value.get("schema") != "desk.app-control.sequence/v1":
+        raise RuntimeError("sequence.schema 必须是 desk.app-control.sequence/v1")
+    steps = value.get("steps")
+    if not isinstance(steps, list) or not steps:
+        raise RuntimeError("sequence.steps 必须是非空数组")
+    for i, step in enumerate(steps):
+        if not isinstance(step, dict) or not isinstance(step.get("action"), str):
+            raise RuntimeError("sequence.steps[%d] 缺少 action" % i)
+        if not isinstance(step.get("input", {}), dict):
+            raise RuntimeError("sequence.steps[%d].input 必须是对象" % i)
+        def contains_node_id(value):
+            if isinstance(value, dict):
+                return "node_id" in value or any(contains_node_id(v) for v in value.values())
+            if isinstance(value, list):
+                return any(contains_node_id(v) for v in value)
+            return False
+        if contains_node_id(step.get("input", {})):
+            raise RuntimeError("sequence.steps[%d] 使用一次性 node_id；请改用 selector 或 locator" % i)
+    return value
+
+
+def run_sequence(args):
+    recipe = read_sequence(args.file)
+    sid = session_id(args)
+    held = lease(args)
+    receipts = []
+    latest = ""
+    for i, step in enumerate(recipe["steps"]):
+        name = step["action"]
+        value = step.get("input") or {}
+        # 坐标兜底必须绑定当下快照；每次执行时重新观察，不能复用录制时的版本。
+        if name == "coordinate_click":
+            observed = request("/workbench/app-control/inspect", {
+                "lease_id": held, "session_id": sid, "observation": "document",
+                "input": {}, "idempotency_key": "%s-observe-%d" % (args.run_id, i),
+            })
+            observed = wait_terminal(observed, args.timeout, sid)
+            if observed.get("status") != "succeeded":
+                receipts.append(observed); break
+            latest = observed.get("after_version") or ""
+        digest = hashlib.sha256((args.run_id + ":" + str(i) + ":" + name)
+                                .encode("utf-8")).hexdigest()[:24]
+        operation = request("/workbench/app-control/act", {
+            "lease_id": held, "session_id": sid, "action": name,
+            "input": value, "expected_version": latest,
+            "idempotency_key": "sequence-" + digest,
+            "intent": str(step.get("intent") or ""),
+        })
+        operation = wait_terminal(operation, args.timeout, sid)
+        receipts.append(operation)
+        if operation.get("status") != "succeeded":
+            break
+        latest = operation.get("after_version") or latest
+    return {"schema": recipe["schema"], "run_id": args.run_id,
+            "status": "succeeded" if len(receipts) == len(recipe["steps"])
+            and all(x.get("status") == "succeeded" for x in receipts) else "incomplete",
+            "receipts": receipts}
+
+
+def export_sequence_skill(args):
+    recipe = read_sequence(args.file)
+    name = str(args.name or "")
+    if not re.fullmatch(r"[a-z0-9][a-z0-9_-]{1,62}", name):
+        raise RuntimeError("skill 名称只允许小写字母、数字、下划线和连字符")
+    target = os.path.abspath(os.path.join(args.output, name))
+    root = os.path.abspath(args.output)
+    if os.path.commonpath([target, root]) != root:
+        raise RuntimeError("skill 输出路径越界")
+    os.makedirs(target, exist_ok=True)
+    recipe_path = os.path.join(target, "sequence.json")
+    with open(recipe_path, "w", encoding="utf-8") as f:
+        json.dump(recipe, f, ensure_ascii=False, indent=2); f.write("\n")
+    skill = ("---\nname: %s\ndescription: Replay a reviewed Desk browser App Control sequence.\n---\n\n"
+             "Run this sequence only when the user asks for this browser workflow. Preserve Desk leases, "
+             "approvals, idempotency and receipts; never bypass a needs_user handoff.\n\n"
+             "```bash\ndesktron/bin/app-control sequence run \"$(dirname \"$0\")/sequence.json\" "
+             "--run-id <stable-run-id>\n```\n" % name)
+    with open(os.path.join(target, "SKILL.md"), "w", encoding="utf-8") as f:
+        f.write(skill)
+    return {"ok": True, "skill": name, "path": target, "steps": len(recipe["steps"])}
+
+
+def main():
+    parser = argparse.ArgumentParser(prog="app-control", description="操作用户已委托的 Desk 应用")
+    parser.add_argument("--session", default="")
+    parser.add_argument("--app", default="browser")
+    parser.add_argument("--resource", default="")
+    parser.add_argument("--lease", default="")
+    sub = parser.add_subparsers(dest="command", required=True)
+    sub.add_parser("list", help="列出可操作应用")
+    sub.add_parser("claim", help="认领用户刚刚交出的应用")
+    opening = sub.add_parser("open", help="自己开一个网页并直接持有它")
+    opening.add_argument("url")
+    # 缺省隔离:不带用户 cookie 与内网 SSO,因此不需要用户点头。
+    # --with-identity 才用用户身份,首次要人确认,批准即记住该站点。
+    opening.add_argument("--with-identity", action="store_true",
+                         help="用用户的登录态开(需站点授权;首次会弹确认)")
+    opening.add_argument("--timeout", type=int, default=900)
+    opening.add_argument("--intent", default="", help="给用户审批时显示的一句话执行目的")
+    sub.add_parser("tabs", help="列出当前会话持有的浏览器标签")
+    inspect = sub.add_parser("inspect", help="读取结构化页面或截图")
+    inspect.add_argument("observation", nargs="?", default="document")
+    inspect.add_argument("--input", default="{}", help="观察参数 JSON 对象")
+    inspect.add_argument("--settle-ms", type=int, default=None,
+                         help="读取前等待页面安定，0 表示立即读取")
+    inspect.add_argument("--expected-version", default="")
+    inspect.add_argument("--idempotency-key", default="")
+    inspect.add_argument("--timeout", type=int, default=60)
+    inspect.add_argument("--intent", default="", help="给用户审批时显示的一句话执行目的")
+    act = sub.add_parser("act", help="执行 manifest 声明的动作")
+    act.add_argument("action")
+    act.add_argument("--input", default="{}", help="JSON 对象")
+    act.add_argument("--expected-version", default="")
+    act.add_argument("--idempotency-key", default="")
+    act.add_argument("--timeout", type=int, default=900)
+    act.add_argument("--intent", default="", help="给用户审批时显示的一句话执行目的")
+    status = sub.add_parser("status", help="查询动作状态")
+    status.add_argument("operation_id")
+    waiting = sub.add_parser("wait", help="等待动作形成最终状态")
+    waiting.add_argument("operation_id")
+    waiting.add_argument("--timeout", type=int, default=900)
+    receipt = sub.add_parser("receipt", help="读取最终回执")
+    receipt.add_argument("operation_id")
+    trace = sub.add_parser("trace", help="读取安全的动作失败诊断")
+    trace.add_argument("operation_id")
+    sequence = sub.add_parser("sequence", help="捕获、执行或固化可复用操作序列")
+    seq = sequence.add_subparsers(dest="sequence_command", required=True)
+    capture = seq.add_parser("capture", help="输出当前会话中可移植的成功动作")
+    capture.add_argument("--limit", type=int, default=100)
+    run = seq.add_parser("run", help="按原有审批与回执规则执行 sequence")
+    run.add_argument("file")
+    run.add_argument("--run-id", required=True, help="本次业务执行的稳定幂等标识")
+    run.add_argument("--timeout", type=int, default=900)
+    skill = seq.add_parser("skill", help="把 sequence 固化为本地 Skill")
+    skill.add_argument("name")
+    skill.add_argument("file")
+    skill.add_argument("--output", default=".claude/skills")
+    sub.add_parser("yield", help="主动归还应用控制权")
+    args = parser.parse_args()
+
+    if args.command == "list":
+        result = request("/workbench/app-control")
+    elif args.command == "claim":
+        result = claim(args)
+    elif args.command == "open":
+        operation = request("/workbench/app-control/open", {
+            "session_id": session_id(args), "app_id": args.app, "url": args.url,
+            "isolated": not args.with_identity,
+            "intent": args.intent,
+        })
+        result = wait_terminal(operation, args.timeout, session_id(args))
+    elif args.command == "tabs":
+        result = request("/workbench/app-control/resources?" + urllib.parse.urlencode({
+            "session_id": session_id(args), "app_id": args.app}))
+    elif args.command == "inspect":
+        try:
+            value = json.loads(args.input)
+            if not isinstance(value, dict):
+                raise ValueError("not object")
+        except Exception:
+            raise RuntimeError("--input 必须是 JSON 对象")
+        operation = request("/workbench/app-control/inspect", {
+            "lease_id": lease(args), "session_id": session_id(args),
+            "observation": args.observation, "expected_version": args.expected_version,
+            "idempotency_key": args.idempotency_key, "input": value,
+            "settle_ms": args.settle_ms,
+            "intent": args.intent,
+        })
+        result = wait(operation, max(0, min(args.timeout, 60)), session_id(args))
+    elif args.command == "act":
+        try:
+            value = json.loads(args.input)
+            if not isinstance(value, dict):
+                raise ValueError("not object")
+        except Exception:
+            raise RuntimeError("--input 必须是 JSON 对象")
+        operation = request("/workbench/app-control/act", {
+            "lease_id": lease(args), "session_id": session_id(args), "action": args.action,
+            "input": value, "expected_version": args.expected_version,
+            "idempotency_key": args.idempotency_key,
+            "intent": args.intent,
+        })
+        result = wait_terminal(operation, args.timeout, session_id(args))
+    elif args.command == "status":
+        result = request("/workbench/app-control/operations/%s?%s" % (
+            urllib.parse.quote(args.operation_id),
+            urllib.parse.urlencode({"session_id": session_id(args)})))
+    elif args.command == "wait":
+        result = wait_terminal({"id": args.operation_id, "status": "pending"},
+                               args.timeout, session_id(args))
+    elif args.command == "receipt":
+        result = request("/workbench/app-control/receipts/%s?%s" % (
+            urllib.parse.quote(args.operation_id),
+            urllib.parse.urlencode({"session_id": session_id(args)})))
+    elif args.command == "trace":
+        result = request("/workbench/app-control/trace/%s?%s" % (
+            urllib.parse.quote(args.operation_id),
+            urllib.parse.urlencode({"session_id": session_id(args)})))
+    elif args.command == "sequence" and args.sequence_command == "capture":
+        result = request("/workbench/app-control/sequence?" + urllib.parse.urlencode({
+            "session_id": session_id(args), "app_id": args.app, "limit": args.limit}))
+    elif args.command == "sequence" and args.sequence_command == "run":
+        result = run_sequence(args)
+    elif args.command == "sequence" and args.sequence_command == "skill":
+        result = export_sequence_skill(args)
+    else:
+        result = request("/workbench/app-control/yield", {
+            "lease_id": lease(args), "session_id": session_id(args)})
+    print(json.dumps(result, ensure_ascii=False, indent=2))
+    return 0
+
+
+if __name__ == "__main__":
+    try:
+        raise SystemExit(main())
+    except RuntimeError as exc:
+        print(json.dumps({"error": str(exc)}, ensure_ascii=False), file=sys.stderr)
+        raise SystemExit(1)

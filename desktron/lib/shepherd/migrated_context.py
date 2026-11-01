@@ -1,0 +1,95 @@
+"""Adopt a frozen native working context from the storage-upgrade boundary.
+
+The backup supplies coverage, not conversation text. No old native thread is
+resumed and no historical tool is run. Current instructions remain separate.
+"""
+import hashlib
+import json
+from pathlib import Path
+
+from .codex_working_context import read_working_context
+from .store import SourceVerificationError, PromptNotStarted
+
+
+def migrated_context(connector, service, state, options):
+    path = Path(connector.store_root) / 'migrations/native-to-unified-v1' / (state['conversation_id'] + '.json')
+    if not path.exists():
+        return None
+    if path.is_symlink():
+        raise SourceVerificationError('Shepherd migration boundary cannot be a symlink')
+    backup = json.loads(path.read_text(encoding='utf-8'))
+    if (backup.get('format') != 'shepherd-native-to-unified-v1'
+            or backup.get('conversation_id') != state['conversation_id']):
+        raise SourceVerificationError('Shepherd migration boundary identity mismatch')
+    before = backup['state']
+    previous = before['bindings'].get(before.get('active_binding_id'))
+    if not previous or previous['engine'] != connector.engine:
+        return None
+    count = len(before['turns'])
+    if not count:
+        return None
+    current = state['bindings'].get(previous['binding_id']) or {}
+    if current.get('status') != 'retired':
+        raise SourceVerificationError('Shepherd migration source is not retired')
+    for key in ('native_session_id', 'ownership_nonce', 'connector_version', 'native_cwd'):
+        if current.get(key) != previous.get(key):
+            raise SourceVerificationError('Shepherd migration source identity changed')
+    if (len(state['turns']) < count or previous.get('imported_through_seq') != count
+            or any(a['turn_hash'] != b['turn_hash'] for a, b in zip(before['turns'], state['turns']))):
+        raise SourceVerificationError('Shepherd migration coverage no longer matches the ledger')
+    native = service.connector(current)
+    model = ''
+    if connector.engine == 'codex':
+        native._safe_home()
+        files = list(Path(native.home).rglob('rollout-*' + native.native_session_id + '.jsonl'))
+        if len(files) != 1:
+            raise SourceVerificationError('Shepherd migration rollout missing or ambiguous')
+        native_context = read_working_context(files[0], thread_id=native.native_session_id)
+        if native._revision(files[0]) != previous.get('native_revision'):
+            raise SourceVerificationError('Shepherd migration native revision changed')
+        if not native_context['compacted']:
+            return None
+        model = native_context['model']
+    elif connector.engine == 'pi':
+        native._safe_path(required=True)
+        raw = Path(native.path).read_bytes()
+        if hashlib.sha256(raw).hexdigest() != previous.get('native_revision'):
+            raise SourceVerificationError('Shepherd migration Pi revision changed')
+        entries = [json.loads(line) for line in raw.splitlines()]
+        compact = next((e for e in reversed(entries) if e.get('type') == 'compaction'), None)
+        if not compact:
+            return None
+        at = next((i for i, e in enumerate(entries) if e.get('id') == compact.get('firstKeptEntryId')), -1)
+        if at < 1:
+            raise SourceVerificationError('Shepherd migration Pi retained tail missing')
+        native_context = [entries[0], *entries[at:]]
+        change = next((e for e in reversed(entries) if e.get('type') == 'model_change'), {})
+        model = change.get('modelId', '')
+        if change.get('provider') and options.get('provider') and change['provider'] != options['provider']:
+            raise PromptNotStarted('迁移前后的 Pi Provider 不同，尚未采用旧原生压缩；请先切回原 Provider')
+    elif connector.engine == 'claude':
+        if native.native.revision() != previous.get('native_revision'):
+            raise SourceVerificationError('Shepherd migration Claude revision changed')
+        entries = native.native.load()
+        at = next((i for i in range(len(entries)-1, -1, -1)
+                   if entries[i].get('type') == 'system' and entries[i].get('subtype') == 'compact_boundary'), -1)
+        if at < 0:
+            return None
+        # The bridge builds today's prompt snapshot; the original one remains
+        # untouched in the retired source store.
+        native_context = [e for e in entries[at:] if not (e.get('type') == 'attachment'
+                          and (e.get('attachment') or {}).get('type') == 'prompt_snapshot')]
+        model = next(((e.get('message') or {}).get('model', '') for e in reversed(entries)
+                      if e.get('type') == 'assistant'), '')
+    else:
+        return None
+    selected = options.get('model')
+    # Codex model changes use the exact verified working snapshot. The native
+    # client/server own opaque-state compatibility; do not replace it with full
+    # history or claim it was generated by the newly selected model.
+    if not selected:
+        raise PromptNotStarted('迁移压缩上下文前需要明确选择模型，未重新发送消息')
+    last = state['turns'][count-1]
+    return {'turn_id': last['turn_id'], 'through_seq': count,
+            'payload': {'native': native_context, 'source_hash': last['source_hash'],
+                        'migration_binding_id': previous['binding_id']}}

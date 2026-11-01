@@ -1,0 +1,9 @@
+{
+  "fallbackHistoryTokens": 16384,
+  "maxContextRetries": 1,
+  "summaryInputFractions": [0.8, 0.6, 0.4],
+  "maxSummaryCalls": 64,
+  "contextErrorPattern": "context[_ -]?(?:length|window)[_ -]?(?:exceeded|exceed|limit)|contextWindowExceeded|(?:maximum|max) context length|prompt (?:is )?too long|input (?:is )?too (?:long|large)|exceeds the context window|input token count.*exceeds the maximum|maximum prompt length is [0-9]+|reduce the length of the messages|exceeds (?:the )?maximum allowed input length|exceeds the available context size|greater than the context length|context window exceeds limit|exceeded model token limit|prompt has [0-9,]+ tokens?, but the configured context size|range of input length should be|上下文超限",
+  "compactionThrashingPattern": "\\bautocompact_thrashing\\b|\\bautocompact is thrashing\\b",
+  "nonContextErrorPattern": "rate.?limit|too many requests|Throttling|Service unavailable|quota|unauthorized|authentication"
+}

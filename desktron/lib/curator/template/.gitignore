@@ -1,0 +1,16 @@
+__pycache__/
+*.pyc
+.venv/
+.DS_Store
+
+# 运行态 sidecar(访问计数 + 生命周期事件):不上远端(.kbkit 是 2026-08-13 更名前的旧名)
+.curator/
+.kbkit/
+
+# 消费方工作层(temp + local/{private,shared}):除各自 README 外不进 git,且被准入闸挡住
+temp/*
+!temp/README.md
+local/private/*
+!local/private/README.md
+local/shared/*
+!local/shared/README.md

@@ -1,0 +1,31 @@
+:root {
+  color-scheme: dark;
+  --pt-text: #eaeaea; --pt-strong: #fafafa; --pt-muted: #aeaeae; --pt-faint: #818181;
+  --pt-link: #97a3f7; --pt-surface: rgba(255,255,255,.03); --pt-code: rgba(255,255,255,.06);
+  --pt-border: rgba(255,255,255,.09); --pt-input: #0d0b0b;
+}
+:root[data-theme="light"] {
+  color-scheme: light;
+  --pt-text: #333333; --pt-strong: #171717; --pt-muted: #6b6b6b; --pt-faint: #777777;
+  --pt-link: #4f46b8; --pt-surface: rgba(0,0,0,.025); --pt-code: rgba(0,0,0,.045);
+  --pt-border: rgba(0,0,0,.11); --pt-input: #f7f7f5;
+}
+body { color: var(--pt-text) !important; }
+h1, details.card summary { color: var(--pt-strong) !important; }
+.sub, label, .note { color: var(--pt-muted) !important; }
+.empty, .foot, .disc { color: var(--pt-faint) !important; }
+details.card summary::after { border-color: var(--pt-faint) !important; }
+.card-body { color: var(--pt-text) !important; }
+a { color: var(--pt-link) !important; }
+details.card, .out { background: var(--pt-surface) !important; border-color: var(--pt-border) !important; }
+code { background: var(--pt-code) !important; border-color: var(--pt-border) !important; }
+input, textarea, select { background: var(--pt-input) !important; color: var(--pt-text) !important;
+  border-color: var(--pt-border) !important; }
+@media (pointer: coarse) and (max-width: 820px),
+       (pointer: coarse) and (max-height: 520px) {
+  body { padding: 16px !important; overflow-wrap: anywhere; }
+  details.card { padding: 13px 14px !important; }
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  textarea, select { min-height: 44px; font-size: 16px !important; }
+  [contenteditable]:not([contenteditable="false"]) { font-size: 16px !important; }
+}

@@ -1,0 +1,527 @@
+{
+  "version": "rounded-original-v9-C",
+  "license": "Apache-2.0",
+  "icons": [
+    {
+      "name": "arrangement",
+      "version": "v9-C",
+      "svg": "arrangement.svg",
+      "png": "arrangement.png",
+      "svg_sha256": "bb9325eae382aebd1fa2dddc202058d7d336cccb3159ffb895fb43eac8abbb90",
+      "png_sha256": "53bbe2f3446db6ce69bde9c3c5e9fd7433e0393bfc34675d1ca7becee40742a3",
+      "optical": {
+        "scale": 1.09228,
+        "translate": [
+          -1.47643,
+          -1.37404
+        ],
+        "before_bbox": [
+          55,
+          28,
+          457,
+          481
+        ],
+        "after_bbox": [
+          24,
+          8,
+          488,
+          504
+        ],
+        "before_hull_area": 636.637,
+        "after_hull_area": 801.965,
+        "target_equivalent_side": 26,
+        "max_extent": 31.25,
+        "manual_overshoot": 1.06,
+        "manual_reason": "Calendar binding protrusions overstate convex-hull size relative to the main body; +6% uniform optical overshoot, checked at 16/17/20/24px alongside the full set.",
+        "v8_bbox": [
+          36,
+          8,
+          476,
+          504
+        ],
+        "v8_hull_area": 758.449,
+        "shape_revision": "V9 C: body width 23 to 24.4; divider y12 to y10.8; six dots r1.05 at y16.8 and y23.1. V8 outer scale retained; historic before_bbox is not an aspect-ratio target."
+      }
+    },
+    {
+      "name": "chat-branch-4626029",
+      "version": "v2",
+      "svg": "chat-branch-4626029.svg",
+      "png": "chat-branch-4626029.png",
+      "svg_sha256": "503edb25c6797f7a499c8d529f958c015c2518e6b1c6673bc61c66e7917db060",
+      "png_sha256": "2ac938814b5ea1a97bf00b5a6cad8717f2063cf716d96cae77d108247196bd63",
+      "optical": {
+        "scale": 1.02609,
+        "translate": [
+          -0.41744,
+          -0.41744
+        ],
+        "before_bbox": [
+          50,
+          26,
+          462,
+          486
+        ],
+        "after_bbox": [
+          45,
+          20,
+          467,
+          492
+        ],
+        "before_hull_area": 491.809,
+        "after_hull_area": 517.969,
+        "target_equivalent_side": 26,
+        "max_extent": 29.5
+      }
+    },
+    {
+      "name": "composer-lock",
+      "version": "v2",
+      "svg": "composer-lock.svg",
+      "png": "composer-lock.png",
+      "svg_sha256": "cfb95b5779a000b4b4055ddc7328fcefecd24184d366c1e15b0acf78d0122d67",
+      "png_sha256": "44e316980e4d6a11bea9132acd18c85c90cca8d8da55c2ddf80dd85f58c2109c",
+      "optical": {
+        "scale": 1.03282,
+        "translate": [
+          -0.52512,
+          -0.29919
+        ],
+        "before_bbox": [
+          71,
+          24,
+          441,
+          481
+        ],
+        "after_bbox": [
+          65,
+          20,
+          447,
+          492
+        ],
+        "before_hull_area": 531.535,
+        "after_hull_area": 567.055,
+        "target_equivalent_side": 26,
+        "max_extent": 29.5
+      }
+    },
+    {
+      "name": "composer-mode",
+      "version": "v2",
+      "svg": "composer-mode.svg",
+      "png": "composer-mode.png",
+      "svg_sha256": "0bb6e4b0509ccb9ef9016061e8c4c47832e43a263bfb7e4b7dc72d28a9fc82db",
+      "png_sha256": "cd7d674c7b58f5a84c5c36b103ce8f093f3a7a96478e01a60db6a12398de918a",
+      "optical": {
+        "scale": 1.04889,
+        "translate": [
+          -0.52002,
+          -0.78224
+        ],
+        "before_bbox": [
+          55,
+          31,
+          449,
+          481
+        ],
+        "after_bbox": [
+          49,
+          20,
+          463,
+          492
+        ],
+        "before_hull_area": 573.598,
+        "after_hull_area": 630.137,
+        "target_equivalent_side": 26,
+        "max_extent": 29.5
+      }
+    },
+    {
+      "name": "current-session-task",
+      "version": "v4",
+      "svg": "current-session-task.svg",
+      "png": "current-session-task.png",
+      "svg_sha256": "fd3988bb0e09e786b63fcdd0086796800072c920e72ef4a6fc9139304c863edc",
+      "png_sha256": "13994f7d2322dddce020f4129e4085f7c155b93d76a0451c20d771422d0f12fb",
+      "optical": {
+        "scale": 1.00413,
+        "translate": [
+          -0.06608,
+          -0.06608
+        ],
+        "before_bbox": [
+          39,
+          39,
+          473,
+          473
+        ],
+        "after_bbox": [
+          38,
+          38,
+          474,
+          474
+        ],
+        "before_hull_area": 670.457,
+        "after_hull_area": 676.137,
+        "target_equivalent_side": 26,
+        "max_extent": 29.5
+      }
+    },
+    {
+      "name": "menu-delete",
+      "version": "v2",
+      "svg": "menu-delete.svg",
+      "png": "menu-delete.png",
+      "svg_sha256": "0dd5e759b0071e52b79247f13c355c194b0b92e3f68266bd4478f05488df722f",
+      "png_sha256": "d82867c17d955f56a43c3951bb6cbe7a6476682beef7a2ff162e9e28e36d58fe",
+      "optical": {
+        "scale": 1.07331,
+        "translate": [
+          -1.17296,
+          -1.07234
+        ],
+        "before_bbox": [
+          47,
+          36,
+          465,
+          473
+        ],
+        "after_bbox": [
+          31,
+          21,
+          481,
+          491
+        ],
+        "before_hull_area": 586.805,
+        "after_hull_area": 675.846,
+        "target_equivalent_side": 26,
+        "max_extent": 29.5
+      }
+    },
+    {
+      "name": "menu-memory",
+      "version": "v2",
+      "svg": "menu-memory.svg",
+      "png": "menu-memory.png",
+      "svg_sha256": "8f2d8484703053c1e027e17e7587d9681cdd4df8209f4399329fafdc3d9f1557",
+      "png_sha256": "de101ab8bdbd06c38bf06a9683edfc8852d290ccd3bd98f7bcca4551f3d96645",
+      "optical": {
+        "scale": 1.04836,
+        "translate": [
+          -1.26518,
+          -0.51167
+        ],
+        "before_bbox": [
+          50,
+          31,
+          477,
+          473
+        ],
+        "after_bbox": [
+          32,
+          24,
+          480,
+          488
+        ],
+        "before_hull_area": 615.07,
+        "after_hull_area": 674.275,
+        "target_equivalent_side": 26,
+        "max_extent": 29.5
+      }
+    },
+    {
+      "name": "menu-rename",
+      "version": "v3-shorter-pencil",
+      "svg": "menu-rename.svg",
+      "png": "menu-rename.png",
+      "svg_sha256": "ba58044a446c72144ac8d9a1f4b86cd0d5b4e5c552850f0d91d7f1edee2c100b",
+      "png_sha256": "c2ec882a806358a8fb2e5364b1798f3f651ee9163daf52e52f4eb193fba2b289",
+      "optical": {
+        "scale": 1.13189,
+        "translate": [
+          -3.08656,
+          -2.14561
+        ],
+        "before_bbox": [
+          72,
+          48,
+          457,
+          465
+        ],
+        "after_bbox": [
+          40,
+          34,
+          471,
+          495
+        ],
+        "before_hull_area": 439.408,
+        "after_hull_area": 543.914,
+        "target_equivalent_side": 26,
+        "max_extent": 29.5,
+        "shape_revision": "User requested slightly shorter and wider pencil: shaft 14/-16 to 12.7/-14.5, cap 5/4.4 to 5.3/4.7, stroke 2.1 to 2.2; recentered horizontally."
+      }
+    },
+    {
+      "name": "right-arrow",
+      "version": "v2",
+      "svg": "right-arrow.svg",
+      "png": "right-arrow.png",
+      "svg_sha256": "6d0e5b11bc345557240800f9277b4a3b14262c651dc9d4ce0fa7796d590695b4",
+      "png_sha256": "429c6299f667f577075c6ce23caa44b5726d1cd7f90828eaed60e297f6a6b962",
+      "optical": {
+        "scale": 1.06787,
+        "translate": [
+          -1.65323,
+          -1.08592
+        ],
+        "before_bbox": [
+          155,
+          35,
+          374,
+          477
+        ],
+        "after_bbox": [
+          139,
+          20,
+          373,
+          492
+        ],
+        "before_hull_area": 229.908,
+        "after_hull_area": 262.389,
+        "target_equivalent_side": 26,
+        "max_extent": 29.5
+      }
+    },
+    {
+      "name": "sidebar-apps",
+      "version": "v2",
+      "svg": "sidebar-apps.svg",
+      "png": "sidebar-apps.png",
+      "svg_sha256": "71ec28c1c96197144089167c74ff6040b7ba734b6e45f0697416b9a377f0dc5a",
+      "png_sha256": "e0845c3d8f4e91e1d23ee35b3351e5cd4b9a5ddf3d878bdc3ec7ad90862383aa",
+      "optical": {
+        "scale": 0.93744,
+        "translate": [
+          1.00096,
+          1.00096
+        ],
+        "before_bbox": [
+          31,
+          31,
+          481,
+          481
+        ],
+        "after_bbox": [
+          45,
+          45,
+          467,
+          467
+        ],
+        "before_hull_area": 769.238,
+        "after_hull_area": 676.252,
+        "target_equivalent_side": 26,
+        "max_extent": 29.5
+      }
+    },
+    {
+      "name": "sidebar-chat",
+      "version": "v9-C",
+      "svg": "sidebar-chat.svg",
+      "png": "sidebar-chat.png",
+      "svg_sha256": "c8d67fa13bcd8bf057ad74f196d962de63f141a0717e761a7c61e417af86ef55",
+      "png_sha256": "6d652276dd3ad6e626ea4d418ef0fc4de8d644ed3a473851067e5a85fc447cc7",
+      "optical": {
+        "scale": 1.06053,
+        "translate": [
+          -0.96848,
+          -0.66675
+        ],
+        "before_bbox": [
+          47,
+          39,
+          465,
+          482
+        ],
+        "after_bbox": [
+          41,
+          37,
+          471,
+          493
+        ],
+        "before_hull_area": 601.037,
+        "after_hull_area": 635.676,
+        "target_equivalent_side": 26,
+        "max_extent": 29.5,
+        "v8_bbox": [
+          34,
+          30,
+          478,
+          501
+        ],
+        "v8_hull_area": 675.164,
+        "v9_outer_scale": 0.97,
+        "v9_outer_translate": [
+          0.48,
+          0.48
+        ]
+      }
+    },
+    {
+      "name": "sidebar-settings",
+      "version": "v6-设置齿轮",
+      "svg": "sidebar-settings.svg",
+      "png": "sidebar-settings.png",
+      "svg_sha256": "ee41964e56c4c110a2f03d7cf35f9f931136f48a845358f59500ba36f8d3cfb2",
+      "png_sha256": "e7e9e5858bd9e23ca07f97f40cc2085491eb1a1fbe09ab5ac9a8a8f4ffb8730f",
+      "optical": {
+        "scale": 1.04219,
+        "translate": [
+          -0.67504,
+          -0.67504
+        ],
+        "before_bbox": [
+          30,
+          30,
+          482,
+          482
+        ],
+        "after_bbox": [
+          20,
+          20,
+          492,
+          492
+        ],
+        "before_hull_area": 622.371,
+        "after_hull_area": 676.215,
+        "target_equivalent_side": 26,
+        "max_extent": 29.5
+      }
+    },
+    {
+      "name": "status-alert",
+      "version": "v3-circle",
+      "revision_note": "User requested a circular outer frame for the context-rail warning/error exclamation on 2026-10-22; the internal exclamation geometry is unchanged.",
+      "svg": "status-alert.svg",
+      "png": "status-alert.png",
+      "svg_sha256": "fea0c95e0a32f5465088f3aa4f04507609aaf4c3d7f8afcd547043d1e90502ba",
+      "png_sha256": "731b79ce10eabc82c0670f0376ec6d957db9702c6c12e4f62e0360d51145d31b",
+      "optical": {
+        "scale": 1,
+        "translate": [
+          0,
+          0
+        ],
+        "before_bbox": [
+          36,
+          32,
+          476,
+          473
+        ],
+        "after_bbox": [
+          19,
+          19,
+          493,
+          493
+        ],
+        "before_hull_area": 506.564,
+        "after_hull_area": 683.291,
+        "target_equivalent_side": 26,
+        "max_extent": 29.5
+      }
+    },
+    {
+      "name": "status-login",
+      "version": "v2",
+      "svg": "status-login.svg",
+      "png": "status-login.png",
+      "svg_sha256": "a7a69c9b22ff5e16477d9ed1e280c4773e2380205b559887ea4dc5fb0cd4efb6",
+      "png_sha256": "5db6f441ed97b84d2f58a056a534766edae7f47f8208b19d273358b9399324ae",
+      "optical": {
+        "scale": 1.02237,
+        "translate": [
+          -0.35792,
+          -0.35792
+        ],
+        "before_bbox": [
+          39,
+          39,
+          473,
+          473
+        ],
+        "after_bbox": [
+          34,
+          34,
+          478,
+          478
+        ],
+        "before_hull_area": 646.738,
+        "after_hull_area": 675.98,
+        "target_equivalent_side": 26,
+        "max_extent": 29.5
+      }
+    },
+    {
+      "name": "status",
+      "version": "v5-聊天安排状态",
+      "svg": "status.svg",
+      "png": "status.png",
+      "svg_sha256": "6f80f2504a24c0ec9b10ef3b10dabd30ebdeb3c03bc6d022f418d3caaaa9d25b",
+      "png_sha256": "2aca4e970376b457d56ff03c5cc5864bf1d332c6e42305a57a1526325ce1dda9",
+      "optical": {
+        "scale": 1.0158,
+        "translate": [
+          -0.2528,
+          -0.2528
+        ],
+        "before_bbox": [
+          39,
+          39,
+          473,
+          473
+        ],
+        "after_bbox": [
+          35,
+          35,
+          477,
+          477
+        ],
+        "before_hull_area": 655.137,
+        "after_hull_area": 674.816,
+        "target_equivalent_side": 26,
+        "max_extent": 29.5
+      }
+    },
+    {
+      "name": "task",
+      "version": "v2",
+      "svg": "task.svg",
+      "png": "task.png",
+      "svg_sha256": "8950d70c7fe40506c1454af33737c479208fe8f576107eac396894077963c5e1",
+      "png_sha256": "3018c5bcc2165c73c1e1fe25d896e8424eded929a81963179691d78d660527e9",
+      "optical": {
+        "scale": 1.02524,
+        "translate": [
+          -0.40384,
+          -0.40384
+        ],
+        "before_bbox": [
+          39,
+          39,
+          473,
+          473
+        ],
+        "after_bbox": [
+          33,
+          33,
+          479,
+          479
+        ],
+        "before_hull_area": 643.129,
+        "after_hull_area": 675.105,
+        "target_equivalent_side": 26,
+        "max_extent": 29.5
+      }
+    }
+  ],
+  "optical_policy": "Uniform silhouette-area scaling toward an equivalent 26-unit side, capped at 29.5-unit extent; aspect ratio and internal approved details retained. Chat shifted down 0.6 unit for optical centering. Role-specific CSS dimensions remain unchanged. V8: retain all V7 calibrations except calendar +6% uniform optical overshoot (31.25-unit extent ceiling). Rail optical y-offset remains a separate 0.5 CSS px and is not baked into artwork. V9 C: calendar body widened 6.1%, shallower header and smaller redistributed six dots; retain V8 outer transform. Chat has an additional centered uniform 0.97 scale. Other 14 icons and CSS unchanged; historical before_bbox is retained for provenance, not a V9 calendar aspect-ratio target."
+}

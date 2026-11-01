@@ -1,0 +1,51 @@
+# 通用内容规则。引擎的 add / lint 读取。实例可追加,不删基线。
+# 表达黑名单对齐"陈述结论,不讲过程;不浮夸"。
+
+# frontmatter 必备字段(所有内容笔记)
+required_fields: [id, tier, kind, confidence, summary]
+
+# kind=fact 追加必备
+required_fields_fact: [doc_type, status]
+
+# 置信度伴随字段:两档都需 source。档位由 source 里的独立来源数决定(0/1/≥2),不手设。
+require_companion:
+  documented: [source]
+  corroborated: [source]
+
+# 正文禁用表达(字面匹配):维护者视角 / 推理过程 / 浮夸营销
+forbidden_in_body:
+  # 维护者视角 / 认知过程
+  - 当前理解是
+  - 之所以
+  - 本文档主要介绍
+  - 本文解决
+  - 后续计划补充
+  # 推理 / 整理过程
+  - 经过分析
+  - 我们发现
+  - 通过对比
+  - 可以发现
+  - 由此可见
+  - 目前看来
+  - 整理后发现
+  # 浮夸 / 营销
+  - 杀手锏
+  - 革命性
+  - 颠覆
+  - 至关重要
+  - 本质上
+  - 最关键
+
+# 按桶覆盖正文黑名单。某桶列出则替换默认清单。
+# 例:private 记私有认知演化,本就写推理过程,可放宽推理类用词,只留浮夸类。
+# forbidden_overrides:
+#   private: [杀手锏, 革命性, 颠覆, 至关重要, 本质上, 最关键]
+
+# 鲜度兜底(实例 ontology.freshness 未覆盖的 doc_type 用此默认,月)
+freshness_default: {fresh: 6, aging: 12}
+
+# 单笔记正文字数纪律(按非空白字符计,不含 frontmatter)。质量提示,不阻断写入。
+# 小颗粒 facts-only;超长多半是把多条揉一起,该拆或蒸馏。两档可在实例 rules 覆盖。
+file_structure:
+  soft_chars: 2000   # 超过 → lint 提示"建议拆分"
+  warn_chars: 2500   # 超过 → lint WARN"应拆分/蒸馏"

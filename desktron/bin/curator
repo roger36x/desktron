@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+# curator CLI 入口(Desk 自带)。
+#
+# 引擎源码 2026-08-04 并进 Desk:desktron/lib/curator。agent 侧的 skill、hook 与 prompt
+# 大量调 `curator ...`,故仍提供这个可执行入口,只是实现从 pip 装的 console_script 换成本脚本。
+# 装机把它软链进 ~/.local/bin(见 desktron 的 doctor 段),PATH 上是 `curator`。
+#
+# 2026-08-13 由 kbkit 更名为 curator:旧名的「kb」暗示只管知识库,而它同时管事实、判断、
+# 流水与封存;「kit」暗示可分发的工具箱,而它已是 Desk 内部组成部分。旧名入口见同级 kbkit。
+set -euo pipefail
+
+# 经软链调用时 BASH_SOURCE 是软链本身,要先解到真身才找得到同级的 ../lib。
+# macOS 的 readlink 没有 -f,故手工逐跳解析。
+src="${BASH_SOURCE[0]}"
+while [ -L "$src" ]; do
+  dir="$(cd -P "$(dirname "$src")" && pwd)"
+  src="$(readlink "$src")"
+  [[ "$src" == /* ]] || src="$dir/$src"
+done
+HERE="$(cd -P "$(dirname "$src")" && pwd)"
+LIB="$(cd -P "$HERE/../lib" && pwd)"
+export PYTHONPATH="$LIB${PYTHONPATH:+:$PYTHONPATH}"
+
+exec python3 -c 'import sys; from curator.cli import main; sys.exit(main())' "$@"

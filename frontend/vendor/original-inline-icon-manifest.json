@@ -1,0 +1,348 @@
+{
+  "schema": 1,
+  "version": "reviewed-inline-v2-and-iris-demo1",
+  "status": "applied-to-source",
+  "license": "Apache-2.0 subject to project rightsholder confirmation",
+  "scope": "39 ordinary inline symbols plus A/C; Timeline-only symbols removed with the retired application",
+  "adaptations": [
+    "Root display dimensions and accessibility metadata only",
+    "Child group pins reviewed paint attributes against legacy root CSS; geometry unchanged"
+  ],
+  "icons": [
+    {
+      "file": "frontend/app-core.js",
+      "symbol": "ICONS.server",
+      "svg_sha256": "13153205ffce6c2b9d328632e3704118048a4508f0f9e2622d96ad507491f780",
+      "approved_draft_sha256": "6e252d11aff97790b94d0b8348e82914722bf59788066f060c7f4167d079625e",
+      "construction": "new-semantic-construction-32-grid",
+      "reused_asset": null
+    },
+    {
+      "file": "frontend/app-core.js",
+      "symbol": "ICONS.share",
+      "svg_sha256": "0d7f27963fc61caf3bb5b311c3be7e7ae90e89fc484b695a55c183a65639760f",
+      "approved_draft_sha256": "144540b8a3f4b5536f5fbf103c88053fc0404db93b70499db094878fdf673b61",
+      "construction": "new-semantic-construction-32-grid",
+      "reused_asset": null
+    },
+    {
+      "file": "frontend/app-core.js",
+      "symbol": "ICONS.laptop",
+      "svg_sha256": "8ba0643dd120fdb892975ce793941b238d7a3e5cb30add0e20e5f9960bb38f70",
+      "approved_draft_sha256": "0453f824cb77bf773896170221de36ec2505d2e0b59bb854a11e0cd334185213",
+      "construction": "new-semantic-construction-32-grid",
+      "reused_asset": null
+    },
+    {
+      "file": "frontend/app-core.js",
+      "symbol": "ICONS.cloud",
+      "svg_sha256": "c4a4ad9f2d1af99f8559ab85e1acc42be701f0fb1e32500d479a3d2864051144",
+      "approved_draft_sha256": "c4ed6d25c1830e830fa54754b5d9b2d941461284c21485178f2a887133bfc36f",
+      "construction": "new-semantic-construction-32-grid",
+      "reused_asset": null
+    },
+    {
+      "file": "frontend/app-core.js",
+      "symbol": "ICONS.link",
+      "svg_sha256": "5616f90807fe9199b297f1f4aaf0dc902fb4a3e834eee8dfe3d772ed6cf5c277",
+      "approved_draft_sha256": "747c347995d0661c4830fa1b9188d4fed1d5eef100c4f5aa5c86844122e8efa2",
+      "construction": "new-semantic-construction-32-grid",
+      "reused_asset": null
+    },
+    {
+      "file": "frontend/app-core.js",
+      "symbol": "ICONS.bell",
+      "svg_sha256": "ee2efbe25c2da17e5ff09538346e9468720c1215ae407979f7ff362a05bbeb0e",
+      "approved_draft_sha256": "5958ae731b6a74da5e3a1ef6b04e674a093dee84fbc508f6e6a2835d9e1ecd07",
+      "construction": "reuse-existing-desktron-drawing",
+      "reused_asset": "bell.svg"
+    },
+    {
+      "file": "frontend/app-core.js",
+      "symbol": "ICONS.shield",
+      "svg_sha256": "53dc46cbb52e500b6a2116d18f5770657fe71ac00b483e4d324c8c15119b5671",
+      "approved_draft_sha256": "c238af4b448aab46fac0214cdfd48d1ca3c596f161d2ceb6f01076d208211e48",
+      "construction": "new-semantic-construction-32-grid",
+      "reused_asset": null
+    },
+    {
+      "file": "frontend/app-core.js",
+      "symbol": "ICONS.clipboard",
+      "svg_sha256": "7bb3666104d8beeeae05f4c7d8c8cc95abd8759392f3e044e8ef094481f4995b",
+      "approved_draft_sha256": "88e8c7c626ddcb792926ff3ec45e6d0d883abba83456d37a5e23ce8deefae192",
+      "construction": "new-semantic-construction-32-grid",
+      "reused_asset": null
+    },
+    {
+      "file": "frontend/app-core.js",
+      "symbol": "ICONS.activity",
+      "svg_sha256": "9327310a7750e6cdd92da87a21df5a5185a9b6d6b37c0081ad950fc9b1485a26",
+      "approved_draft_sha256": "1121db354fb9918c63ca181e8946694e5b207b3af9fec12ac6646019d3eb660b",
+      "construction": "new-semantic-construction-32-grid",
+      "reused_asset": null
+    },
+    {
+      "file": "frontend/app-core.js",
+      "symbol": "ICONS.overview",
+      "svg_sha256": "3960e38d91f725ea8e52bc818f7a022529091f76779acad02d42fb6a26017e2c",
+      "approved_draft_sha256": "cbb6396fa961a2b5507a923be18d43162f692b24ed814088e36fde625c3b4d2f",
+      "construction": "new-semantic-construction-32-grid",
+      "reused_asset": null
+    },
+    {
+      "file": "frontend/app-core.js",
+      "symbol": "ICONS.list",
+      "svg_sha256": "56fc417deee6f9961c2be5b6e9951ce8f4c59ad5f8adec881536d0122b17d570",
+      "approved_draft_sha256": "151e90e56c8c547b148893da11524680225be5c401d18723f5803bbd9d5bfb18",
+      "construction": "new-semantic-construction-32-grid",
+      "reused_asset": null
+    },
+    {
+      "file": "frontend/app-core.js",
+      "symbol": "ICONS.book",
+      "svg_sha256": "93010a37cb435fe56e12732c17b008931e7d9c89a572149c80e3bc3ce043d7eb",
+      "approved_draft_sha256": "f68b3b42d0bc4c09b853d5593b781ed9f6105d7e3f28b977a1ca6f4e35d9d08a",
+      "construction": "new-semantic-construction-32-grid",
+      "reused_asset": null
+    },
+    {
+      "file": "frontend/app-core.js",
+      "symbol": "ICONS.monitor",
+      "svg_sha256": "9ebf2a45a7a8cb30874a52d4ac0ea58c2210317806a05efafbdbda86c8414314",
+      "approved_draft_sha256": "14456bcdb9bb395748c08b12dc05d50e16a9b2560befc21c675dd7651765639b",
+      "construction": "new-semantic-construction-32-grid",
+      "reused_asset": null
+    },
+    {
+      "file": "frontend/app-core.js",
+      "symbol": "ICONS.trash",
+      "svg_sha256": "f5cb87d47bdca85a097c87183a81c8e6bf86be96b5c7dc0a4d47d431371ac1fd",
+      "approved_draft_sha256": "dc8e3173929f86c42320e927083b993c008e6ce52a050a6af108547fcb47df7f",
+      "construction": "reuse-existing-desktron-drawing",
+      "reused_asset": "menu-delete.svg"
+    },
+    {
+      "file": "frontend/app-core.js",
+      "symbol": "ICONS.code",
+      "svg_sha256": "6e4cc31b09abf002b65dbf439fcadc290c3829f776562288130005c5824d2763",
+      "approved_draft_sha256": "373090ed81d73467b605321798be944dd59f03d3763ab0ae4d4b92f70dc91670",
+      "construction": "new-semantic-construction-32-grid",
+      "reused_asset": null
+    },
+    {
+      "file": "frontend/app-core.js",
+      "symbol": "ICONS.memory",
+      "svg_sha256": "c2746bbb43caf70b6e7bca3330a1464238d4c9c0c5e7ab7f6708c57f02c6a1e4",
+      "approved_draft_sha256": "c231b140e2ca070ccc7f5e8062d8c3c69fd3e13c9331d0d4b5eaf3b5aa7ed924",
+      "construction": "new-semantic-construction-32-grid",
+      "reused_asset": null
+    },
+    {
+      "file": "frontend/app-core.js",
+      "symbol": "ICONS.resume",
+      "svg_sha256": "9a68f293c62d460b92c074fa25327a91cfced6780e1ae18bd7027d9b5297addd",
+      "approved_draft_sha256": "1922787ad3d7c6adf0d0e290f3d535d115d32fadfd69ec67bbd75adf1c92e1d6",
+      "construction": "new-semantic-construction-32-grid",
+      "reused_asset": null
+    },
+    {
+      "file": "frontend/app-core.js",
+      "symbol": "ICONS.enter",
+      "svg_sha256": "fe5b5d4cb5b8c62e07beb38c712adac1c0b3aa8d6f58e2b76a488afd75983db2",
+      "approved_draft_sha256": "ddd89d1a25624db1ecf95e07d9eed6929ca6ef458886e3b30d26c957e3a9714b",
+      "construction": "reuse-existing-desktron-drawing",
+      "reused_asset": "right-arrow.svg"
+    },
+    {
+      "file": "frontend/app-core.js",
+      "symbol": "ICONS.folder",
+      "svg_sha256": "ea91e3d90f6c50589943bd0df583aa3d016a5ffa4a30a28820f690aa379ca6b2",
+      "approved_draft_sha256": "4125866538e487078be7885f0068b5d3dbc404e55f5916ffac84405bf0276acd",
+      "construction": "new-semantic-construction-32-grid",
+      "reused_asset": null
+    },
+    {
+      "file": "frontend/app-core.js",
+      "symbol": "ICONS.branch",
+      "svg_sha256": "488f06ccd2bdae7de3e7ad5bc052d654a3e62b4b07cfbfa690c87b4069951ef2",
+      "approved_draft_sha256": "fc343690743d4d72dc96276766b5adb20908b23044191c3c5ac0164101ff5560",
+      "construction": "reuse-existing-desktron-drawing",
+      "reused_asset": "chat-branch-4626029.svg"
+    },
+    {
+      "file": "frontend/app-core.js",
+      "symbol": "ICONS.target",
+      "svg_sha256": "4b795e6033c77bf26792b8693c3c4bf1e1d4a4bc85921584708bb2576716f009",
+      "approved_draft_sha256": "ac7f2824d08ea0d62e3559904c1a96f2a2a3ad3940217967caf640f65afc8251",
+      "construction": "new-semantic-construction-32-grid",
+      "reused_asset": null
+    },
+    {
+      "file": "frontend/app-core.js",
+      "symbol": "ICONS.note",
+      "svg_sha256": "e4b4dfd4576395ebd8eb888720106ce09ac577d872a5a4471cc7b546882a4936",
+      "approved_draft_sha256": "c3cdc45ad16c927e1fa8d09fd46f700c48293ccf0b8e3d4a9b5043bed4fd6875",
+      "construction": "new-semantic-construction-32-grid",
+      "reused_asset": null
+    },
+    {
+      "file": "frontend/app-core.js",
+      "symbol": "ICONS.pencil",
+      "svg_sha256": "85eb20431f99b7b3818755d65dbc88575893d3bcd38f1f1f96271122fc75b1fa",
+      "approved_draft_sha256": "b57b640cfda2fe94c79bcea79433d7309e4bca6a9127556c1c0feb7c8d2bc699",
+      "construction": "reuse-existing-desktron-drawing",
+      "reused_asset": "menu-rename.svg",
+      "revision": "User-requested slightly shorter/wider pencil after V2 application; source menu-rename v3-shorter-pencil."
+    },
+    {
+      "file": "frontend/app-core.js",
+      "symbol": "ICONS.back",
+      "svg_sha256": "7f342652dc4475c8ef835219a19619d6e1e7acda5362bb7c9d1fd3f7fc2e16c5",
+      "approved_draft_sha256": "dba98658ba542bac7ccb2f3a5bbbdcbe91061a556845c339e16033eaea41b25b",
+      "construction": "reuse-existing-desktron-drawing-mirrored",
+      "reused_asset": "right-arrow.svg"
+    },
+    {
+      "file": "frontend/app-core.js",
+      "symbol": "ICONS.plus",
+      "svg_sha256": "d13341dc43946d73f39ec1f8cf4c2236a16b22b02133c9df9747697f4642ad79",
+      "approved_draft_sha256": "c5dd3ada867bb1d632746f3ae4a07692a003e17b8b1768e53966b3748ed0b9a4",
+      "construction": "new-semantic-construction-32-grid",
+      "reused_asset": null
+    },
+    {
+      "file": "frontend/app-core.js",
+      "symbol": "ICONS.more",
+      "svg_sha256": "e542130f5a200c0ff71bb2ee01f023a744c52ba4b6748337d0354c43c1fddffb",
+      "approved_draft_sha256": "1d1f3a9a5dc4fcd246ac273536c13325af1c233dd4aa66824f7fdc8e7326ce5c",
+      "construction": "new-semantic-construction-32-grid",
+      "reused_asset": null
+    },
+    {
+      "file": "frontend/app-core.js",
+      "symbol": "ICONS.check",
+      "svg_sha256": "2d435b152b2c3e666db035faacd139f8fe0346423e3ef9d4e72e7c7ccb681cac",
+      "approved_draft_sha256": "3e31138169be980c036c4128af647d2471f1aa02ca5c5b577bd2e4d9934dc9f6",
+      "construction": "new-semantic-construction-32-grid",
+      "reused_asset": null
+    },
+    {
+      "file": "frontend/app-core.js",
+      "symbol": "ICONS.close",
+      "svg_sha256": "09d3f8085f75358cf710db20f83372bf565ec6ea950455f5e41d1fe91acf0a16",
+      "approved_draft_sha256": "d4c91520af2beec40b70c93ee59e7749e7a04c9874025e011bc84b429040f859",
+      "construction": "new-semantic-construction-32-grid",
+      "reused_asset": null
+    },
+    {
+      "file": "frontend/app-core.js",
+      "symbol": "ICONS.hide",
+      "svg_sha256": "c32d8e1d70f666fb3e9848b1fa78bb8a916778ffcd4e08a0ff9915dbef4506d2",
+      "approved_draft_sha256": "c02906e797b2a63667647d1bda193b109ff034bebdd66a8706021536c36e95d0",
+      "construction": "new-semantic-construction-32-grid",
+      "reused_asset": null
+    },
+    {
+      "file": "frontend/app-core.js",
+      "symbol": "ICONS.file",
+      "svg_sha256": "b1252e06eb235129158ab92455c170325b7d9b7f87d8689b58c4814b4e2693a1",
+      "approved_draft_sha256": "4d66afc8dbe63768cd7a8fda41b7f58e07fc6a1c9b209fa32d5b69b029042bdd",
+      "construction": "new-semantic-construction-32-grid",
+      "reused_asset": null
+    },
+    {
+      "file": "frontend/app-core.js",
+      "symbol": "ICONS.image",
+      "svg_sha256": "9b874d3eb8e9fbead5d9e0d6ecff2da742b23af8165a2e71431731ebb9ce25dd",
+      "approved_draft_sha256": "43a8e1ffa7d09539277f056b75d8ce5412bd3108fc4aa7ada347d9b760c07337",
+      "construction": "new-semantic-construction-32-grid",
+      "reused_asset": null
+    },
+    {
+      "file": "frontend/app-core.js",
+      "symbol": "ICONS.braces",
+      "svg_sha256": "0223bc000d8063ef867254b5a2616014f8bed755c9a1f10d8ee6f1d66efaf7f0",
+      "approved_draft_sha256": "4197cd27d94758a4a84fddce8c429af1063ae35364d7cee69da6ac6b4e943653",
+      "construction": "new-semantic-construction-32-grid",
+      "reused_asset": null
+    },
+    {
+      "file": "frontend/app-core.js",
+      "symbol": "ICONS.shellfile",
+      "svg_sha256": "3b40d4996bbcd275fbf9f2430830d858c83d7b58b6a1a30894a0e96e66e291e3",
+      "approved_draft_sha256": "5d0a1fd8c45849e342ec06aa57493cf36ccc6fd48119cbc050f247a197e3edb4",
+      "construction": "new-semantic-construction-32-grid",
+      "reused_asset": null
+    },
+    {
+      "file": "frontend/app-core.js",
+      "symbol": "ICONS.moon",
+      "svg_sha256": "d002a6353b061df4c54060c34ff07ba6230c378f76c7cb6b9c215e3fedfeb8fe",
+      "approved_draft_sha256": "2afed978f029c0a5634070a340ada6898f8b097fd506fe03864580d76718987c",
+      "construction": "new-semantic-construction-32-grid",
+      "reused_asset": null
+    },
+    {
+      "file": "frontend/app-core.js",
+      "symbol": "ICONS.sidebar",
+      "svg_sha256": "f6b9bb632f554c9b90a953743ef00d09126cabb1a92c6e2d794a833eb174fa82",
+      "approved_draft_sha256": "5f1408c98e6d156d10465d9bb9d01e79cb3ed244ced363a1f1d64f4df19ad7d0",
+      "construction": "new-semantic-construction-32-grid",
+      "reused_asset": null
+    },
+    {
+      "file": "frontend/app-core.js",
+      "symbol": "ICONS.terminal",
+      "svg_sha256": "dcf3a063940f247095bd6b2569d41e2478ed6f775bcbfe2db081ec21783473fb",
+      "approved_draft_sha256": "d6861415791a804c73ac65e180e619e8c3203dac99b3a13d3ef647075283e458",
+      "construction": "new-semantic-construction-32-grid",
+      "reused_asset": null
+    },
+    {
+      "file": "frontend/app-core.js",
+      "symbol": "ICONS.browser",
+      "svg_sha256": "8658975a7ccd143d3ca5b8753cda4cd918f25b5311d49c9e1a6f58e778e92bd4",
+      "approved_draft_sha256": "8b8a394369c95fc7ef02a2727d9ca383fef07eeec0fee0190323850f6ee76191",
+      "construction": "new-semantic-construction-32-grid",
+      "reused_asset": null
+    },
+    {
+      "file": "frontend/app-core.js",
+      "symbol": "ICONS.lock",
+      "svg_sha256": "fb83b755100725d78509af848b1e241f1d9cf8b50cf148fa8f59fe33a51e6f82",
+      "approved_draft_sha256": "75d1d52a87f89d117739db3716077701483cb7ea44109bd3dde1c7e91ab32f75",
+      "construction": "reuse-existing-desktron-drawing",
+      "reused_asset": "composer-lock.svg"
+    },
+    {
+      "file": "frontend/app-core.js",
+      "symbol": "ICONS.chart",
+      "svg_sha256": "9ddab1ff1f4a4164194e610911c355235111c77c8ce05e6853607bd1d5314226",
+      "approved_draft_sha256": "910d050d0a3409bc58abcf3db96ace6990f860c2fdba22e7264886b819e5aeb5",
+      "construction": "new-semantic-construction-32-grid",
+      "reused_asset": null
+    },
+    {
+      "file": "frontend/app-events.js",
+      "symbol": "BRAND_ICONS.claude",
+      "svg_sha256": "9888c5e5443ee6f7b1b99310e64f6d69e5ade7ff7295d0f089a8c33ac47f997a",
+      "approved_draft_sha256": "03771ed4cd6a4f6c17b1305cab4e8ba4a22b7a4629f4b6f787ed9535bf9595ed",
+      "construction": "existing-independent-letter-with-new-24-slanted-segment-ring"
+    },
+    {
+      "file": "frontend/app-events.js",
+      "symbol": "BRAND_ICONS.codex",
+      "svg_sha256": "de9dd6fc8c147dba867d20f50e65159e14f68c44646c15e6796e3c0bdd90bb66",
+      "approved_draft_sha256": "af9def34a1f371b30392c255a88ebfd330e8d6abddd3c3a5a4d3b2438bd0bb73",
+      "construction": "existing-independent-letter-with-new-24-slanted-segment-ring"
+    }
+  ],
+  "preserved_brand_expression_sha256": {
+    "BRAND_ICONS.pi": "b7ba0f85c8e0f7dbb5da033f4a544e056e542b05887135dc819415cf72fc027e",
+    "BRAND_ICONS.shepherd": "8128db9e81477bb7a36b874dba204ee8bd765e65a16e19e90a10099a4661ae57"
+  },
+  "legacy_dynamic_keys": [
+    "ICONS.zap"
+  ],
+  "trademarks": "Project-created engine identifiers; no vendor endorsement or trademark permission implied."
+}

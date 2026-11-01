@@ -1,0 +1,39 @@
+<!doctype html><html lang="zh"><head><meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">  <!-- 没有这一条,手机上顶层打开这一页会按 980px 排版,窄屏的媒体查询根本不匹配 -->
+<meta name="color-scheme" content="dark light"><script src="/page-theme.js"></script>
+<style>
+  body { background:transparent; color:#eaeaea; font:14px/1.6 ui-sans-serif,system-ui,-apple-system,sans-serif;
+         margin:0; padding:18px 28px; }
+  h1 { font-size:15px; color:#fafafa; margin:2px 2px 4px; }
+  .sub { color:#aeaeae; font-size:13px; margin:0 2px 16px; }
+  details.card {
+    background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.09);
+    border-radius:12px; padding:14px 18px; margin-bottom:12px;
+  }
+  details.card summary {
+    list-style:none; cursor:pointer; user-select:none;
+    display:flex; align-items:center; justify-content:space-between;
+    font-size:14px; font-weight:500; color:#fafafa;
+  }
+  details.card summary::-webkit-details-marker { display:none; }
+  details.card summary::after {
+    content:""; width:9px; height:9px; flex:0 0 auto; margin-left:10px;
+    border-right:1.5px solid #5c5c5c; border-bottom:1.5px solid #5c5c5c;
+    transform:rotate(45deg); transition:transform .15s ease; margin-top:-4px;
+  }
+  details.card[open] summary::after { transform:rotate(225deg); margin-top:4px; }
+  .card-body { margin-top:12px; color:#cfcfcf; font-size:13px; }
+  a { color:#b0b9f9; text-decoration:none; } a:hover { text-decoration:underline; }
+  ul { padding-left:18px; margin:0; } li { margin:5px 0; }
+  .empty { color:#5c5c5c; }
+  .foot { margin:20px 4px 0; color:#5c5c5c; font-size:12px; line-height:1.7; }
+  code { background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.08);
+         border-radius:4px; padding:1px 5px; font-size:12px; }
+</style><link rel="stylesheet" href="/page-theme.css"></head><body>
+<h1>desktop</h1>
+<div class="sub">未归类会话的家。探索性对话先落在这里，再归入工作区或用完即弃。</div>
+<details class="card" open><summary>从这里开始</summary><div class="card-body"><ul>
+  <li>在这里开一段会话，想清楚后再归入工作区。</li>
+  <li>工作区可以在侧栏新建，每个工作区有自己的会话、任务与观测面。</li>
+</ul></div></details>
+<div class="foot">本页为发行版默认观测面。在会话里可让 agent 创建本地定制版（写入 <code>.workbench/panels/本工作区id.html</code>，本地覆盖发行版；删除该文件即回到默认）。</div></body></html>

@@ -1,0 +1,834 @@
+{
+  "schema": 1,
+  "reviews": [
+    {
+      "path": "desk-docs/settings.md",
+      "sha256": "6a40211d6d445f71212e1b6c65225a2b2ce917488a542d256da42905cc2a3561",
+      "rules": ["private-ip-review"],
+      "reason": "Generic RFC1918 address/prefix documentation example and CGNAT exclusion, not deployment data."
+    },
+    {
+      "path": "desktron/lib/lan_settings.py",
+      "sha256": "7c5d1e70474224046d1c039da783ec5df87ade57fdcf124b3a90527acde554cd",
+      "rules": ["private-ip-review"],
+      "reason": "RFC1918 allowlist ranges and a generic private IPv4 UI example; no deployment endpoints or credentials."
+    },
+    {
+      "path": "desktron/tests/test_frontend_lan_settings.py",
+      "sha256": "f892a47c60b385963c0e182ff852827e6a74a6cdaa08c536e70ec88f2ab58d53",
+      "rules": ["private-ip-review"],
+      "reason": "Synthetic LAN URLs in stubbed browser responses; no requests to these endpoints, no real pairing credentials."
+    },
+    {
+      "path": "desktron/tests/test_lan_address_drift.py",
+      "sha256": "ea25fdd1cdc591b84c0255f0eb2cc8bf0033500757ac6633152ca12e0d69cc52",
+      "rules": ["private-ip-review"],
+      "reason": "Generic RFC1918 example addresses used as fixtures for LAN address drift detection, not deployment data."
+    },
+    {
+      "path": "desktron/tests/test_lan_settings.py",
+      "sha256": "62a62cccfa24514de5f0deeed21fcfca7ab75ecb86485b64f01f8ed4f136261b",
+      "rules": ["private-ip-review"],
+      "reason": "Synthetic RFC1918 policies and peers; ownership and discovery mocked, no network connections."
+    },
+    {
+      "path": "frontend/app-settings-core.js",
+      "sha256": "1fd4e91f369042d174fb067a0eeafcd341a7a54d8fbc58c7d91ead6944b4d211",
+      "rules": ["private-ip-review"],
+      "reason": "Generic private IPv4/prefix form placeholder, not a configured network endpoint."
+    },
+    {
+      "path": "desktron/tests/test_tailscale_windows.py",
+      "sha256": "efa18e0443e11ad230c75cc437c001266e94a7ca94e22da161b227035a37f58d",
+      "rules": [
+        "url-userinfo"
+      ],
+      "reason": "Synthetic user@localhost URL is a rejected upstream fixture only; pure-function input, no network request, real account or credential."
+    },
+    {
+      "path": "frontend/icons/app-monaco-ide-original-00700ed9f4c1.png",
+      "sha256": "00700ed9f4c1e9e20f625b90f2e93075369677907fc15ebeaab7b0d17d24779a",
+      "rules": [
+        "binary-file-review"
+      ],
+      "reason": "Decoded PNG visually reviewed: white rounded IDE tile with gray angle brackets and an orange-red slash; no user content. Security review only; redistribution rights are not established."
+    },
+    {
+      "path": "desktron/tests/test_launcher_path_order.py",
+      "sha256": "b8a19c7acd43deb1a69d108409635e30e18dc755076e85511f458d240dd9ba1d",
+      "rules": [
+        "personal-home-path"
+      ],
+      "reason": "Synthetic HOME fixture used only to test launcher PATH ordering; no real user's home path or personal data."
+    },
+    {
+      "path": "desktron/tests/test_network_proxy.py",
+      "sha256": "842d39de4ec614cbc0ad38345281da1151a61c45978ad386fbf78152cbffd06a",
+      "rules": [
+        "credential-assignment-review",
+        "private-host"
+      ],
+      "reason": "Synthetic rejected password and .internal.example/.corp.example bypass fixtures; temporary policy files and loopback servers only, no user credentials or private destinations."
+    },
+    {
+      "path": "AGENTS.md",
+      "sha256": "23eb36a2692d51f07d86a5b55fe20cfcd0d9e16935e8f58576e01069461f9416",
+      "rules": [
+        "personal-home-path"
+      ],
+      "reason": "Portable $HOME product subdirectory is mistaken for an OS home; no personal absolute path."
+    },
+    {
+      "path": "CONTRIBUTING.md",
+      "sha256": "407b2d09f6111983115f3f025edc5bb76b71e818a641ca467d772688c3410d9b",
+      "rules": [
+        "personal-home-path"
+      ],
+      "reason": "Explicit alice placeholder illustrating forbidden personal paths; not a contributor directory."
+    },
+    {
+      "path": "desktop/icons/icon.icns",
+      "sha256": "0fc0533cd0f3772f6a09f88e9b0f8ee63322a1a0ab1e7fe61ed4c6d7fb6c15b1",
+      "rules": [
+        "binary-file-review"
+      ],
+      "reason": "Decoded product branding asset visually reviewed: white desk lamp with warm yellow bulb on charcoal background; no personal data or credentials. Security review only."
+    },
+    {
+      "path": "desktop/icons/icon.png",
+      "sha256": "0419cb003711710d26cbdd3e1aa6c1acad9c552ccc774fca6f9c4ef788c28025",
+      "rules": [
+        "binary-file-review"
+      ],
+      "reason": "Decoded product branding asset visually reviewed: white desk lamp with warm yellow bulb on charcoal background; no personal data or credentials. Security review only."
+    },
+    {
+      "path": "desktop/windows/icons/desktron-64.rgba",
+      "sha256": "3a9756f1f92db9f1fa52c77cf1dafa65250442f433ed68daf088877b523ede46",
+      "rules": [
+        "non-utf8-file-review"
+      ],
+      "reason": "Decoded 64x64 raw RGBA Windows lamp icon matches the ICO image; opaque pixels contain no NUL byte and are not UTF-8 text. No personal data or credentials. Security review only."
+    },
+    {
+      "path": "desktop/windows/icons/desktron.ico",
+      "sha256": "feff0f10cd9b1cd5b46cfd096ccba3013bf2b8c2e72c425c12de17f5f87406d2",
+      "rules": [
+        "binary-file-review"
+      ],
+      "reason": "Decoded product branding asset visually reviewed: white desk lamp with warm yellow bulb on charcoal background; no personal data or credentials. Security review only."
+    },
+    {
+      "path": "desktron/lib/remote_auth.py",
+      "sha256": "a7720ed0127aed25493d0695cea554018152cceb35f9a127b83a2ed6885c0078",
+      "rules": [
+        "private-ip-review"
+      ],
+      "reason": "Standard RFC1918 network ranges constrain allowed listeners, not deployment endpoints."
+    },
+    {
+      "path": "desktron/lib/term_records.py",
+      "sha256": "c5cb2027147a556c7217cc115666d66a8c607a4f4a2f8ab5165f0b8e571fe95d",
+      "rules": [
+        "personal-home-path"
+      ],
+      "reason": "alice placeholder in cursor-project encoding documentation; not accessed."
+    },
+    {
+      "path": "desktron/lib/web_tools/core.mjs",
+      "sha256": "cdbceec1ca6544d410a5a937b3c2c8ec0d38cee8831c245bbcf88287f4509a8d",
+      "rules": [
+        "private-host",
+        "private-ip-review"
+      ],
+      "reason": "SSRF deny policy uses standard private ranges and cloud metadata hostnames, not private upstreams."
+    },
+    {
+      "path": "desktron/tests/pi_kv_warmup.test.mjs",
+      "sha256": "496060975dfec41b47915c378e1509de0f285af907d947b513c2927512cafd76",
+      "rules": [
+        "credential-assignment-review",
+        "url-userinfo"
+      ],
+      "reason": "TEST/LATE auth markers with mocked fetch; .invalid userinfo URL verifies endpoint rejection."
+    },
+    {
+      "path": "desktron/tests/provider_runtime_contract.test.mjs",
+      "sha256": "d250aec7d220da6e3ce88571da8443f343db3794e486814228a50d652cfe0f2b",
+      "rules": [
+        "private-host"
+      ],
+      "reason": "example internal URL is synthetic trust assertion input; deterministic HMAC key/random fixtures."
+    },
+    {
+      "path": "desktron/tests/shepherd_product_fixture.py",
+      "sha256": "3d0fe586e6469195111db4c76a5e7d333c8253d91fb5c9d80aa66a2b6ef4b549",
+      "rules": [
+        "credential-assignment-review"
+      ],
+      "reason": "Reviewed complete product fixture: synthetic fixture credentials target only random-port loopback ImageModel; temporary provider config and synthetic grounding, no user credentials."
+    },
+    {
+      "path": "desktron/tests/test_approval_notify.py",
+      "sha256": "d94e75f4b044acefac9a8033a389bf0742407e811d044e593b69078ee1b21c4f",
+      "rules": [
+        "private-ip-review"
+      ],
+      "reason": "Explicit SYNTHETIC_OUTER private endpoint only returned by notification stubs, never contacted."
+    },
+    {
+      "path": "desktron/tests/test_check_deps.py",
+      "sha256": "a1888f4138c8a57074b6311c7611896f9393e7629187629e2cf990d1e0170b24",
+      "rules": [
+        "personal-home-path"
+      ],
+      "reason": "tester placeholder supplied through mocked HOME, which and npm-prefix outputs."
+    },
+    {
+      "path": "desktron/tests/test_claude_relocated_transcript.py",
+      "sha256": "272a5eca5ee39d666744acda78582b58f227c864e2a498a222e4fda58f4ee55d",
+      "rules": [
+        "personal-home-path"
+      ],
+      "reason": "somebody placeholder used for encoding/ownership; transcripts are created in temporary HOME."
+    },
+    {
+      "path": "desktron/tests/test_claude_subscription_refresh.py",
+      "sha256": "0c08952be5bde7e355dab501d54f8d44795a29eebbed31cdca1a1a8fc130c909",
+      "rules": [
+        "credential-assignment-review",
+        "personal-home-path"
+      ],
+      "reason": "Single-character fake credentials/keychain responses and x placeholder HOME in environment tests."
+    },
+    {
+      "path": "desktron/tests/test_claude_transcript_path.py",
+      "sha256": "29a79010ea27dd0ee894e0d928bb22aaed46853ddf01cf0b70e426973f4acdc5",
+      "rules": [
+        "personal-home-path"
+      ],
+      "reason": "alice/somebody placeholder path fixtures; transcripts are created in temporary HOME."
+    },
+    {
+      "path": "desktron/tests/test_codex_approval.py",
+      "sha256": "690587c5548d7f943014a376b6e1d507afc3a622a9469356d2bd1074c5c296c2",
+      "rules": [
+        "personal-home-path"
+      ],
+      "reason": "me placeholder in static synthetic permission request handled by FakeConn."
+    },
+    {
+      "path": "desktron/tests/test_codex_appserver.py",
+      "sha256": "90e3643cf3578c080747b0ea14e032891dd4c8e455c253608aa88903c8030bf0",
+      "rules": [
+        "credential-assignment-review"
+      ],
+      "reason": "Short synthetic markers and fictitious bearer inputs verify diagnostic credential removal."
+    },
+    {
+      "path": "desktron/tests/test_codex_intent_comment.py",
+      "sha256": "87a16dc4c7202a1d7b96a90db5bf789a8a9efb7fdc270ae95a122fa45011c888",
+      "rules": [
+        "personal-home-path"
+      ],
+      "reason": "x placeholder in command-summary parser input, not an executed command."
+    },
+    {
+      "path": "desktron/tests/test_frontend_phone_connection.py",
+      "sha256": "e9fdc11200fd596b2482f883afcb8bde013a8eec3e458db246c6015e1bda4020",
+      "rules": [
+        "private-ip-review"
+      ],
+      "reason": "Explicit synthetic private URL and phone-test-fixture marker; page fetch mocked, no LAN request."
+    },
+    {
+      "path": "desktron/tests/test_frontend_term_path.py",
+      "sha256": "853356ec933e122835405a842a27bc8a4b0e107700c5cc33e0fdc6312dc1fc49",
+      "rules": [
+        "personal-home-path"
+      ],
+      "reason": "x placeholder input to directory-label string processing."
+    },
+    {
+      "path": "desktron/tests/test_frontend_tool_object.py",
+      "sha256": "fafda44add113f651af522c1831e720ebc8ff64e89309908cce53d3e994983e7",
+      "rules": [
+        "personal-home-path"
+      ],
+      "reason": "alice/x placeholders in task and command summary rendering inputs."
+    },
+    {
+      "path": "desktron/tests/test_frontend_user_bubble.py",
+      "sha256": "d54b6ca03efe306c4e34781c34576eadd23c5c4226644919207596bf709136c2",
+      "rules": [
+        "personal-home-path"
+      ],
+      "reason": "alice placeholder verifies literal bubble rendering rather than execution."
+    },
+    {
+      "path": "desktron/tests/test_http_proxy.py",
+      "sha256": "f9b5fb36c704093d7471fe61e1e927f2d8d92c3af12ad2ac2b41e1ba42d19ed1",
+      "rules": [
+        "private-host"
+      ],
+      "reason": "Cloud metadata URL is a rejected path fixture asserting HTTP 400, not an upstream."
+    },
+    {
+      "path": "desktron/tests/test_lan_access.py",
+      "sha256": "c5f4c6095591b8c058f8bca2db9b90643097a9e73c0af12bafba9e39053595c6",
+      "rules": [
+        "private-ip-review"
+      ],
+      "reason": "Explicit SYNTHETIC_LAN_HOST/PEER topology used as mocked identities; actual HTTP server binds loopback."
+    },
+    {
+      "path": "desktron/tests/test_larkbot_chain.py",
+      "sha256": "3b29704c166d7f1047ef30590126e1641391771664cb89ceeff9b582d2494cb0",
+      "rules": [
+        "credential-token"
+      ],
+      "reason": "Sequential synthetic token verifies outbound blocking/sealing; send API is mocked."
+    },
+    {
+      "path": "desktron/tests/test_larkbot_e2e.py",
+      "sha256": "1ac99531b43b83f5a5d5b4aa670e445752ad5856d63725cb4610dc61fa63968d",
+      "rules": [
+        "credential-token"
+      ],
+      "reason": "Sequential synthetic token injected into fake model output verifies no outbound send/history persistence."
+    },
+    {
+      "path": "desktron/tests/test_context_delivery_native.py",
+      "sha256": "1898c0facc8a7842037b403ebcddad74cd3bbee06f8db252b43baba2efe6e754",
+      "rules": [
+        "credential-assignment-review"
+      ],
+      "reason": "Synthetic-test-only credentials in temporary Claude and Pi provider configs target loopback fixture servers; no user credentials or external model requests."
+    },
+    {
+      "path": "desktron/tests/test_larkbot_peers.py",
+      "sha256": "6d01f315252a94c0892382892eb1260f765c9019d3e37a8124433bbd066216b6",
+      "rules": [
+        "private-ip-review"
+      ],
+      "reason": "Simple synthetic private topology in temporary config; urlopen mocked for peer/hop whitelist tests."
+    },
+    {
+      "path": "desktron/tests/test_larkbot_route.py",
+      "sha256": "cb1e03b5471ed0829c77c743ced4dba5bb68dc68a45253a0f84c253a9bc988d5",
+      "rules": [
+        "credential-assignment-review",
+        "credential-token",
+        "private-key"
+      ],
+      "reason": "Repeated/sequential synthetic tokens, JWT fixture and PEM header without key material verify redline blocking."
+    },
+    {
+      "path": "desktron/tests/test_pi_engine.py",
+      "sha256": "22ba20d55e720e0a78befddb25a0c41bab0ce8e31eb32585d29e944024513f2c",
+      "rules": [
+        "personal-home-path"
+      ],
+      "reason": "x placeholder input to cwd encoding assertion."
+    },
+    {
+      "path": "desktron/tests/test_pi_exit_native.py",
+      "sha256": "89bc0a3327151fc10465ef27aa570faf3d471afc4d8a1e95872ecfb971df2b99",
+      "rules": [
+        "credential-assignment-review"
+      ],
+      "reason": "Short fixture credential in temporary provider config targeting loopback ImageModel."
+    },
+    {
+      "path": "desktron/tests/test_pi_subagents_native.py",
+      "sha256": "f8f66425d183feb8353d66ecbed00270699ce66c48c3ee3f356a6a0e532e6c8d",
+      "rules": [
+        "credential-assignment-review"
+      ],
+      "reason": "Reviewed host-manifest/chord compatibility fixtures and version-derived runtime slot; unchanged synthetic fixture credential targets only this file's loopback SubagentModel, with no user credentials or external model requests."
+    },
+    {
+      "path": "desktron/tests/test_remote_auth.py",
+      "sha256": "4414470c48de3f4d4ef3dd6af404d81038e2b882d532653658146629d1f1104b",
+      "rules": [
+        "private-ip-review"
+      ],
+      "reason": "Explicit SYNTHETIC_PEER and simple private-address pure-function inputs; no connections to those addresses."
+    },
+    {
+      "path": "desktron/tests/test_restart_drain_api.py",
+      "sha256": "965f90125df99517d2bb84e76be5991b48f51e4d5251c0784f5dacf1105447ad",
+      "rules": [
+        "private-ip-review"
+      ],
+      "reason": "Simple synthetic private peer on fake Handler/SimpleNamespace verifies remote rejection, no network request."
+    },
+    {
+      "path": "desktron/tests/test_shepherd_fallback_native.py",
+      "sha256": "205a38e86d251604c4c25e8b11ee750ddb1efb81ebe2db49b3f987c7323e0b45",
+      "rules": [
+        "credential-assignment-review"
+      ],
+      "reason": "Short fixture credential in isolated HOME targeting loopback ImageModel with global hooks disabled."
+    },
+    {
+      "path": "desktron/tests/test_shepherd_image_execution.py",
+      "sha256": "41979a7441e53e8ded2d67c17a97719aa80c55bfe7e53c0b8da8b214a1c015a7",
+      "rules": [
+        "credential-assignment-review"
+      ],
+      "reason": "Short fixture credential authenticates the file local random-port loopback ImageModel."
+    },
+    {
+      "path": "desktron/tests/test_shepherd_peer_context.py",
+      "sha256": "2a5d1eb4051d61a5f16f566a6b766c4656e3cffd02b5b5a5f9114bcdd59019fa",
+      "rules": [
+        "credential-assignment-review"
+      ],
+      "reason": "Short fixture credential in temporary agent config targeting loopback ImageModel."
+    },
+    {
+      "path": "desktron/tests/test_shepherd_pi_execution.py",
+      "sha256": "18c728dbebd3ea3b001549984177a7249667b9edb3a781b223bcb664f211e65c",
+      "rules": [
+        "credential-assignment-review"
+      ],
+      "reason": "Short fixture credential in temporary config using dynamically supplied loopback fixture-server port."
+    },
+    {
+      "path": "desktron/tests/test_shepherd_recap_native.py",
+      "sha256": "b9ba48c9c1aaac21b42baff2b907904226952f02e9ea952b3106391ccb522ff6",
+      "rules": [
+        "credential-assignment-review"
+      ],
+      "reason": "Short Pi/Claude fixture credentials in temporary configs targeting loopback ImageModel."
+    },
+    {
+      "path": "desktron/tests/test_shepherd_unified_native.py",
+      "sha256": "31530d0d9b90e534c11a4cea4219cf02ec62b28ad2f8c6ddc0f48c7992ef3911",
+      "rules": [
+        "credential-assignment-review"
+      ],
+      "reason": "Short fixture credentials in three temporary provider configs targeting loopback ImageModel."
+    },
+    {
+      "path": "desktron/tests/test_shepherd_unified_storage.py",
+      "sha256": "09d47443433e70e4adcb2dba6df86256470c69c3d8bffdac641b664149d8826c",
+      "rules": [
+        "private-key",
+        "url-userinfo"
+      ],
+      "reason": "Repeated synthetic credential, invalid PEM fixture and example.com userinfo verify checkpoint redaction."
+    },
+    {
+      "path": "desktron/tests/test_tailscale_serve_entry.py",
+      "sha256": "32fec641ff0a00d8cddb339237f2cccccce2a7d844ffc629c3f8728e21220464",
+      "rules": [
+        "private-ip-review"
+      ],
+      "reason": "Explicit SYNTHETIC_LAN_PEER and SYNTHETIC_FOREIGN_UPSTREAM pure-function inputs; HTTP server binds loopback, Tailscale CLI mocked."
+    },
+    {
+      "path": "desktron/tests/test_term_resume_cwd.py",
+      "sha256": "08a5adc32f9a2594d5ef38bb4c1561225b3605f5e9681e7fb525f14f5c96b24d",
+      "rules": [
+        "personal-home-path"
+      ],
+      "reason": "somebody placeholder cwd fixtures; transcripts are created in temporary HOME."
+    },
+    {
+      "path": "desktron/tests/web_tools_core.test.mjs",
+      "sha256": "b250a3aeac002560dad31b2f180a48122ccef93af07e844cf5cf13a4096d5314",
+      "rules": [
+        "private-host",
+        "private-ip-review",
+        "url-userinfo"
+      ],
+      "reason": "Standard private/metadata/example URLs and fictitious userinfo are SSRF/redirect/redaction negative fixtures."
+    },
+    {
+      "path": "desk-docs/sessions.md",
+      "sha256": "533e80c230946b055437b065d443bf3503f48cf534aed66ce1fc0e902746a94e",
+      "rules": [
+        "personal-home-path"
+      ],
+      "reason": "Portable environment-based product command path is mistaken for a personal home; no user path, token or credential is included."
+    },
+    {
+      "path": "docs/release.md",
+      "sha256": "6003fc77145c9e8b6640ed32980dda2b20f90e8ddea96905a51d17801c674362",
+      "rules": [
+        "personal-home-path"
+      ],
+      "reason": "Portable $HOME product subdirectory is mistaken for an OS home; no personal absolute path."
+    },
+    {
+      "path": "frontend/app-assets/excalidraw/icon.png",
+      "sha256": "b6a6c4464319a3b1faeb310bcb8ac24061b2301ce19ddc81453675bbd461ed8f",
+      "rules": [
+        "binary-file-review"
+      ],
+      "reason": "Decoded official Excalidraw v0.18.1 apple-touch PNG visually reviewed: purple pen/ruler on white, no user content. Exact source bytes and MIT are bound in icon-source.json; security review is separate from trademark rights."
+    },
+    {
+      "path": "frontend/app-chat-refs.js",
+      "sha256": "794904cc671807cb7d61286a939f2e4b3933c091b005b5368b41c05d1ef77b1b",
+      "rules": [
+        "personal-home-path"
+      ],
+      "reason": "Ellipsis path in renderer comment has no personal username."
+    },
+    {
+      "path": "frontend/app-i18n-en.js",
+      "sha256": "ed2a1dd64c84d76e04a2a336f657323b6dff1d1b3b20d95086c32c2ed53fa9fa",
+      "rules": [
+        "private-host"
+      ],
+      "reason": "Intranet-section localization keys, not DNS hostnames; moved from app-core.js."
+    },
+    {
+      "path": "frontend/app-i18n-zh.js",
+      "sha256": "6fe359ea0b5a104abdbe10453adbf64f3fe98129974d65ba076332c7bd3d162e",
+      "rules": [
+        "private-host"
+      ],
+      "reason": "Intranet-section localization keys, not DNS hostnames; moved from app-core.js."
+    },
+    {
+      "path": "frontend/app-settings-setup.js",
+      "sha256": "ce6bde9c653a17542406ac5f40e32fc26d98aa3cb3495de1998be29d4762ff44",
+      "rules": [
+        "private-host"
+      ],
+      "reason": "Intranet-section group property access, not a DNS hostname."
+    },
+    {
+      "path": "frontend/brand-logo-light.png",
+      "sha256": "51fc52fbd6a8b02439f6dca72314606604085414ee88baca3283ed6ef17820bd",
+      "rules": [
+        "binary-file-review"
+      ],
+      "reason": "Decoded product branding asset visually reviewed: white desk lamp with warm yellow bulb on charcoal background; no personal data or credentials. Security review only."
+    },
+    {
+      "path": "frontend/brand-logo.png",
+      "sha256": "51fc52fbd6a8b02439f6dca72314606604085414ee88baca3283ed6ef17820bd",
+      "rules": [
+        "binary-file-review"
+      ],
+      "reason": "Decoded product branding asset visually reviewed: white desk lamp with warm yellow bulb on charcoal background; no personal data or credentials. Security review only."
+    },
+    {
+      "path": "frontend/icon-180.png",
+      "sha256": "99674089f127a8d488720bfbfdb00aefb13c735333d6439acefb8647c614bfbe",
+      "rules": [
+        "binary-file-review"
+      ],
+      "reason": "Decoded product branding asset visually reviewed: white desk lamp with warm yellow bulb on charcoal background; no personal data or credentials. Security review only."
+    },
+    {
+      "path": "frontend/icon-192.png",
+      "sha256": "5ea746cb221c6a579fce2b5c2596bdc37d92f1df5af533328dcc6931897ff663",
+      "rules": [
+        "binary-file-review"
+      ],
+      "reason": "Decoded product branding asset visually reviewed: white desk lamp with warm yellow bulb on charcoal background; no personal data or credentials. Security review only."
+    },
+    {
+      "path": "frontend/icon-512.png",
+      "sha256": "bd9dcd8f3fc047d24c295018b22c5f8c4c7b1ce4d42e6f1e50b9c0cdf5d16f48",
+      "rules": [
+        "binary-file-review"
+      ],
+      "reason": "Decoded product branding asset visually reviewed: white desk lamp with warm yellow bulb on charcoal background; no personal data or credentials. Security review only."
+    },
+    {
+      "path": "frontend/icon-folder.png",
+      "sha256": "905d2778fcb2f600152afd35134aa34fe0a5653ef63373c4bfa9b2c8d3daadf2",
+      "rules": [
+        "binary-file-review"
+      ],
+      "reason": "Decoded PNG UI asset visually reviewed: icon-folder; not user content. Security review only; see asset notices for redistribution rights."
+    },
+    {
+      "path": "frontend/icons/app-terminal.png",
+      "sha256": "3b65e9edf830e3eb909b24ad7ec0cca9f133aad95435866d37f6d5a58d103d6d",
+      "rules": [
+        "binary-file-review"
+      ],
+      "reason": "Decoded PNG UI asset visually reviewed: app-terminal; not user content. Security review only; see asset notices for redistribution rights."
+    },
+    {
+      "path": "frontend/icons/arrangement.png",
+      "sha256": "53bbe2f3446db6ce69bde9c3c5e9fd7433e0393bfc34675d1ca7becee40742a3",
+      "rules": [
+        "binary-file-review"
+      ],
+      "reason": "Decoded PNG UI asset visually reviewed: arrangement; not user content. Security review only; see asset notices for redistribution rights."
+    },
+    {
+      "path": "frontend/icons/bell.png",
+      "sha256": "04fd8a9e27d48deacdf691fe6d81f887e2ed3d0f7088eb0023287f05ce53092f",
+      "rules": [
+        "binary-file-review"
+      ],
+      "reason": "Decoded 512px RGBA PNG visually reviewed on light/dark backgrounds: project-authored solid bell body, original outer bounds retained; SVG and SHA-256 match supplemental-original-manifest.json. EXIF contains only numeric color-space and dimensions, no personal content. Apache-2.0 recorded in ICONS-LICENSE.txt."
+    },
+    {
+      "path": "frontend/icons/composer-lock.png",
+      "sha256": "44e316980e4d6a11bea9132acd18c85c90cca8d8da55c2ddf80dd85f58c2109c",
+      "rules": [
+        "binary-file-review"
+      ],
+      "reason": "Decoded PNG UI asset visually reviewed: composer-lock; not user content. Security review only; see asset notices for redistribution rights."
+    },
+    {
+      "path": "frontend/icons/composer-mode.png",
+      "sha256": "cd7d674c7b58f5a84c5c36b103ce8f093f3a7a96478e01a60db6a12398de918a",
+      "rules": [
+        "binary-file-review"
+      ],
+      "reason": "Decoded PNG UI asset visually reviewed: composer-mode; not user content. Security review only; see asset notices for redistribution rights."
+    },
+    {
+      "path": "frontend/icons/current-session-task.png",
+      "sha256": "13994f7d2322dddce020f4129e4085f7c155b93d76a0451c20d771422d0f12fb",
+      "rules": [
+        "binary-file-review"
+      ],
+      "reason": "Decoded PNG UI asset visually reviewed: current-session-task; not user content. Security review only; see asset notices for redistribution rights."
+    },
+    {
+      "path": "frontend/icons/menu-delete.png",
+      "sha256": "d82867c17d955f56a43c3951bb6cbe7a6476682beef7a2ff162e9e28e36d58fe",
+      "rules": [
+        "binary-file-review"
+      ],
+      "reason": "Decoded PNG UI asset visually reviewed: menu-delete; not user content. Security review only; see asset notices for redistribution rights."
+    },
+    {
+      "path": "frontend/icons/menu-move.png",
+      "sha256": "a68617b0085836305a22341b4241ac73a0faae725d7d6c9bdf6ca7cd297aa34e",
+      "rules": [
+        "binary-file-review"
+      ],
+      "reason": "Decoded 512px RGBA PNG visually reviewed: project-authored rounded move-action outline; matches supplemental-original-manifest.json and editable SVG. EXIF contains only numeric color-space and dimensions; no personal content. Current artwork is Apache-2.0 per ICONS-LICENSE.txt; historical replaced artwork rights are unchanged."
+    },
+    {
+      "path": "frontend/icons/menu-rename.png",
+      "sha256": "c2ec882a806358a8fb2e5364b1798f3f651ee9163daf52e52f4eb193fba2b289",
+      "rules": [
+        "binary-file-review"
+      ],
+      "reason": "Decoded PNG UI asset visually reviewed: menu-rename; not user content. Security review only; see asset notices for redistribution rights."
+    },
+    {
+      "path": "frontend/icons/right-arrow.png",
+      "sha256": "429c6299f667f577075c6ce23caa44b5726d1cd7f90828eaed60e297f6a6b962",
+      "rules": [
+        "binary-file-review"
+      ],
+      "reason": "Decoded PNG UI asset visually reviewed: right-arrow; not user content. Security review only; see asset notices for redistribution rights."
+    },
+    {
+      "path": "frontend/icons/shepherd.png",
+      "sha256": "f41929a2ad9d89a0268580809af22251755139c702a941fd9815ec2c3bf524a3",
+      "rules": [
+        "binary-file-review"
+      ],
+      "reason": "Decoded PNG UI asset visually reviewed: shepherd; not user content. Security review only; see asset notices for redistribution rights."
+    },
+    {
+      "path": "frontend/icons/sidebar-apps.png",
+      "sha256": "e0845c3d8f4e91e1d23ee35b3351e5cd4b9a5ddf3d878bdc3ec7ad90862383aa",
+      "rules": [
+        "binary-file-review"
+      ],
+      "reason": "Decoded PNG UI asset visually reviewed: sidebar-apps; not user content. Security review only; see asset notices for redistribution rights."
+    },
+    {
+      "path": "frontend/icons/sidebar-chat.png",
+      "sha256": "6d652276dd3ad6e626ea4d418ef0fc4de8d644ed3a473851067e5a85fc447cc7",
+      "rules": [
+        "binary-file-review"
+      ],
+      "reason": "Decoded PNG UI asset visually reviewed: sidebar-chat; not user content. Security review only; see asset notices for redistribution rights."
+    },
+    {
+      "path": "frontend/icons/sidebar-settings.png",
+      "sha256": "e7e9e5858bd9e23ca07f97f40cc2085491eb1a1fbe09ab5ac9a8a8f4ffb8730f",
+      "rules": [
+        "binary-file-review"
+      ],
+      "reason": "Decoded PNG UI asset visually reviewed: sidebar-settings; not user content. Security review only; see asset notices for redistribution rights."
+    },
+    {
+      "path": "frontend/icons/status-alert.png",
+      "sha256": "731b79ce10eabc82c0670f0376ec6d957db9702c6c12e4f62e0360d51145d31b",
+      "rules": [
+        "binary-file-review"
+      ],
+      "reason": "Decoded PNG UI asset visually reviewed: status-alert; not user content. Security review only; see asset notices for redistribution rights."
+    },
+    {
+      "path": "frontend/icons/status-login.png",
+      "sha256": "5db6f441ed97b84d2f58a056a534766edae7f47f8208b19d273358b9399324ae",
+      "rules": [
+        "binary-file-review"
+      ],
+      "reason": "Decoded PNG UI asset visually reviewed: status-login; not user content. Security review only; see asset notices for redistribution rights."
+    },
+    {
+      "path": "frontend/icons/status.png",
+      "sha256": "2aca4e970376b457d56ff03c5cc5864bf1d332c6e42305a57a1526325ce1dda9",
+      "rules": [
+        "binary-file-review"
+      ],
+      "reason": "Decoded PNG UI asset visually reviewed: status; not user content. Security review only; see asset notices for redistribution rights."
+    },
+    {
+      "path": "frontend/icons/task.png",
+      "sha256": "3018c5bcc2165c73c1e1fe25d896e8424eded929a81963179691d78d660527e9",
+      "rules": [
+        "binary-file-review"
+      ],
+      "reason": "Decoded PNG UI asset visually reviewed: task; not user content. Security review only; see asset notices for redistribution rights."
+    },
+    {
+      "path": "frontend/icons/menu-memory.png",
+      "sha256": "de101ab8bdbd06c38bf06a9683edfc8852d290ccd3bd98f7bcca4551f3d96645",
+      "rules": [
+        "binary-file-review"
+      ],
+      "reason": "Decoded 512px RGBA PNG visually reviewed: project-authored note/pencil menu outline; matches rounded-original-manifest.json and editable SVG. EXIF contains only numeric color-space and dimensions; no personal content. Current artwork is Apache-2.0 per ICONS-LICENSE.txt; historical replaced artwork rights are unchanged."
+    },
+    {
+      "path": "frontend/vendor/fonts/JetBrainsMono-Regular.woff2",
+      "sha256": "f1a7a03672cdd494ce0d5543fac6e4360fe22403c6de297fdc2e55a815f7baff",
+      "rules": [
+        "binary-file-review"
+      ],
+      "reason": "WOFF2 JetBrains Mono regular font resource with font notice, not user data; security review only."
+    },
+    {
+      "path": "frontend/icons/app-browser-original-5d5d9b828321.png",
+      "sha256": "5d5d9b8283214245ced2cf8aa5a26e3fbf46a630b35613295cd6512459da08ed",
+      "rules": [
+        "binary-file-review"
+      ],
+      "reason": "Decoded 512px RGBA PNG visually reviewed: project-authored white globe on purple tile, matches supplemental-original-manifest.json and editable SVG; EXIF only numeric color-space and dimensions, no personal content. Apache-2.0 recorded in ICONS-LICENSE.txt; not the excluded historical user-reference globe."
+    },
+    {
+      "path": "frontend/icons/chat-branch-4626029.png",
+      "sha256": "2ac938814b5ea1a97bf00b5a6cad8717f2063cf716d96cae77d108247196bd63",
+      "rules": [
+        "binary-file-review"
+      ],
+      "reason": "Decoded 512px RGBA PNG visually reviewed: project-authored branch outline, matches rounded-original-manifest.json and editable SVG; EXIF only numeric color-space and dimensions, no personal content. Apache-2.0 recorded in ICONS-LICENSE.txt; compatibility filename does not denote original Flaticon bytes."
+    },
+    {
+      "path": "frontend/icons/app-file-browser-original-7710531b884e.png",
+      "sha256": "7710531b884eff6ff04a970f0ef51fd3dd36a6c0bcb386189e8834246e6b54fb",
+      "rules": [
+        "binary-file-review"
+      ],
+      "reason": "Decoded 512px RGBA PNG visually reviewed: project-authored yellow folder and papers, matches editable SVG and test-pinned SHA-256; EXIF only numeric color-space and dimensions, no personal content. Apache-2.0 recorded in ICONS-LICENSE.txt."
+    },
+    {
+      "path": "frontend/icons/file-browser-folder-closed-original-34d18b546b71.png",
+      "sha256": "34d18b546b71d7e2c08a543e7b4f63fe3aef79d1795959f86bf5963ff19dd2f0",
+      "rules": [
+        "binary-file-review"
+      ],
+      "reason": "Decoded 512px RGBA PNG visually reviewed: project-authored closed yellow folder with editable SVG; EXIF only numeric color-space and dimensions, no personal content. Apache-2.0 recorded in ICONS-LICENSE.txt."
+    },
+    {
+      "path": "frontend/icons/file-browser-folder-open-original-615e0fce22fa.png",
+      "sha256": "615e0fce22fafccaecd1cea4bd6ed659e5366206e1456ffa7bf8034641abc290",
+      "rules": [
+        "binary-file-review"
+      ],
+      "reason": "Decoded 512px RGBA PNG visually reviewed: project-authored open yellow folder with editable SVG; EXIF only numeric color-space and dimensions, no personal content. Apache-2.0 recorded in ICONS-LICENSE.txt."
+    },
+    {
+      "path": "frontend/icons/ide-folder-closed-original-905d2778fcb2.png",
+      "sha256": "905d2778fcb2f600152afd35134aa34fe0a5653ef63373c4bfa9b2c8d3daadf2",
+      "rules": [
+        "binary-file-review"
+      ],
+      "reason": "Decoded 512px RGBA PNG visually reviewed: project-authored closed blue folder, identical to icon-folder.png with editable SVG; EXIF only numeric color-space and dimensions, no personal content. Apache-2.0 recorded in ICONS-LICENSE.txt."
+    },
+    {
+      "path": "frontend/icons/ide-folder-open-original-b95c700a1abe.png",
+      "sha256": "b95c700a1abe9dcaf1d8d7c0a650f3ceb0963ae4a6da98a5416d9d557c0f70e0",
+      "rules": [
+        "binary-file-review"
+      ],
+      "reason": "Decoded 512px RGBA PNG visually reviewed: project-authored open blue folder with editable SVG; EXIF only numeric color-space and dimensions, no personal content. Apache-2.0 recorded in ICONS-LICENSE.txt."
+    },
+    {
+      "path": "frontend/icons/file-browser-document-original-d8bd1e3d7169.png",
+      "sha256": "d8bd1e3d716928fce1827bcab3f77fc10796df1efb4c26ef722bbe87f58dc2a9",
+      "rules": [
+        "binary-file-review"
+      ],
+      "reason": "Decoded 512px RGBA PNG visually reviewed: project-authored document outline with editable SVG; EXIF only numeric color-space and dimensions, no personal content. Apache-2.0 recorded in ICONS-LICENSE.txt."
+    },
+    {
+      "path": "frontend/icons/app-terminal-3b65e9edf830.png",
+      "sha256": "3b65e9edf830e3eb909b24ad7ec0cca9f133aad95435866d37f6d5a58d103d6d",
+      "rules": [
+        "binary-file-review"
+      ],
+      "reason": "Decoded 512px RGBA PNG visually reviewed: white terminal prompt on charcoal rounded tile, byte-identical to app-terminal.png; no PNG metadata or personal content. Security review only; asset notice records OpenDesk artwork."
+    },
+    {
+      "path": "frontend/sidebar-brand-logo.png",
+      "sha256": "422efc45642d340da6197d12a5ac6c8ddf3fd88904d379a7549793d0c5d196a4",
+      "rules": [
+        "binary-file-review"
+      ],
+      "reason": "Decoded 211x256 RGBA PNG visually reviewed: transparent white lamp with warm bulb, no PNG metadata or personal content. Security review only, not redistribution approval."
+    },
+    {
+      "path": "frontend/welcome-logo-light.png",
+      "sha256": "69294d1c0dbbecf2e15afa16c1a6fef9dcdd4d228ad92123c8f50f2953f89b32",
+      "rules": [
+        "binary-file-review"
+      ],
+      "reason": "Decoded 211x256 RGBA PNG visually reviewed: transparent dark lamp with warm bulb, no PNG metadata or personal content. Security review only, not redistribution approval."
+    },
+    {
+      "path": "frontend/welcome-logo.png",
+      "sha256": "422efc45642d340da6197d12a5ac6c8ddf3fd88904d379a7549793d0c5d196a4",
+      "rules": [
+        "binary-file-review"
+      ],
+      "reason": "Decoded 211x256 RGBA PNG visually reviewed: transparent white lamp, byte-identical to sidebar-brand-logo.png; no PNG metadata or personal content. Security review only, not redistribution approval."
+    },
+    {
+      "path": "scripts/dev/shepherd-storage-bench.py",
+      "sha256": "173c0eaa66db41e3ed9ed1f4a7083e5a547ca249e6bfb6dbcb4c78145291f562",
+      "rules": [
+        "credential-assignment-review"
+      ],
+      "reason": "Short local ImageModel credential; seed creates synthetic benchmark history in temporary data root."
+    },
+    {
+      "path": "desktron/tests/browser_search_optimization.test.mjs",
+      "sha256": "a3cb7b7bbf950a9dc35f785134fbe1433dda7fc2bdccf55eea61a67982c1718b",
+      "rules": [
+        "url-userinfo"
+      ],
+      "reason": "Synthetic userinfo URL tests rejection by the search-page parser; no password or real identity. example domains, mocked browser clients and local DNS fixtures only."
+    },
+    {
+      "path": "desktron/tests/test_pi_child_join_native.py",
+      "sha256": "abb2df384057b7544ae4aa457ea299573896b793105268c9c4b8ad6d93e1f2de",
+      "rules": [
+        "credential-assignment-review"
+      ],
+      "reason": "Fixed fixture provider marker targets a random-port loopback JoinModel only; temporary agent configuration and synthetic model responses, no user credentials or external model calls."
+    }
+  ]
+}

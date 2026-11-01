@@ -1,0 +1,4 @@
+interface:
+  display_name: "Pi Agent 配置助手"
+  short_description: "检查、安装和排查 Desk 的 Pi Agent"
+  default_prompt: "检查当前 Desk 的 Pi Agent 配置，并告诉我下一步。"

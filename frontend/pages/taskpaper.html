@@ -1,0 +1,701 @@
+<!doctype html><html lang="zh"><head><meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">  <!-- 没有这一条,手机上顶层打开这一页会按 980px 排版,窄屏的媒体查询根本不匹配 -->
+<style>
+* { box-sizing:border-box; margin:0; padding:0; }
+html,body { height:100%; }
+body { background:transparent; overflow:hidden;
+       font:15px/1.5 -apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang SC","Helvetica Neue",sans-serif;
+       -webkit-font-smoothing:antialiased;
+       /* 深色（默认，跟 Desk 悬浮层一致）；浅色是 TaskPaper 原版粉白，⌘D 切
+
+          底色一律用半透明的黑，压在窗口 vibrancy 上——TaskPaper 原版就是这么做的，
+          它那身暖调不是自己的配色，是背后壁纸透上来的。所以这里不写死任何颜色倾向：
+          壁纸是红的就泛红，换成蓝的就泛蓝，跟着 Desk 左栏一起变。
+          （浮层那一层要放行 vibrancy 才透得下来，见 apps.json 的 glass 与 style.css 的
+          #overlay.glass；iframe 内的 backdrop-filter 模糊不到框外，模糊由窗口材质给。）
+          文字与线条取中性灰，只有它本来就用红的两处例外：实心折叠点、侧栏选中项。 */
+       --side-bg:linear-gradient(180deg,rgba(28,28,30,.62) 0%,rgba(22,22,24,.70) 60%,rgba(26,26,28,.66) 100%);
+       --side-fg:#e6e6e7; --side-h:#9a9a9c; --side-on:rgba(255,255,255,.14);
+       --doc-bg:rgba(18,18,19,.72); --fg:#ededee; --done-fg:#a0a0a2; --done-line:#86868a;
+       --tag:#8c8c8f; --dash:#86868a; --line:rgba(255,255,255,.10); --dot:#76767a; --dot-full:#c9503f;
+       --note:#9d9da0; --hot:linear-gradient(180deg,#d4553f,#c4402f); }
+body.light { --side-bg:linear-gradient(180deg,rgba(243,220,222,.95) 0%,rgba(238,206,212,.95) 55%,rgba(240,212,216,.95) 100%);
+       --side-fg:#2f2a2c; --side-h:#a2989a; --side-on:rgba(0,0,0,.085);
+       --doc-bg:#fff; --fg:#1c1a1b; --done-fg:#1c1a1b; --done-line:#1c1a1b;
+       --tag:#bdb5b7; --dash:#adaaab; --line:#ece4e4; --dot:#f2c3c9; --dot-full:#dd4433;
+       --note:#7d7476; --hot:linear-gradient(180deg,#e2503f,#d43f2f); }
+button { font:inherit; background:none; border:none; color:inherit; cursor:pointer; }
+
+.app { display:flex; height:100vh; }
+
+/* ---- 左栏 ---- */
+/* backdrop-filter 在这里模糊不了 iframe 外的东西（各是各的合成层），窗口材质已经把背后
+   糊过一道了；这里再加一点饱和度，让透上来的色彩不至于被半透明的黑压灰。 */
+/* 左栏顶到窗口上沿:那条分栏线是从天花板通到底的（TaskPaper 原版即如此），横一条页头
+   在上面就把它截断了。Desk 那侧由 apps.json 的 chromeless 让页头浮起来，这里自己排布。 */
+.side { width:250px; flex-shrink:0; display:flex; flex-direction:column;
+        background:var(--side-bg); backdrop-filter:saturate(1.5);
+        -webkit-backdrop-filter:saturate(1.5); border-right:.5px solid var(--line); }
+/* 应用名:与它下面的列表同一块底,不另起颜色——左栏是一整块，中间横一道深色会把它切成
+   两段，读起来像两个区域。深一档的只有右边那条标题条(它属于正文那一侧)。 */
+.app-name { height:44px; flex-shrink:0; display:flex; align-items:center; padding:0 14px;
+            font-size:14.5px; font-weight:600; color:var(--fg); letter-spacing:-.1px; }
+.side-list { flex:1; min-height:0; overflow-y:auto; padding:12px 12px 20px; }
+.side-row { padding:5px 11px; border-radius:7px; color:var(--side-fg); font-size:14.5px; cursor:default;
+            white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.side-row:hover { background:rgba(127,127,127,.14); }
+.side-row.on { background:var(--side-on); }
+.side-row.on.hot { background:var(--hot); color:#fff; font-weight:600; }
+.side-row .n { float:right; opacity:.5; font-size:12.5px; }
+.side-h { padding:16px 11px 4px; font-size:12.5px; font-weight:600; color:var(--side-h); }
+
+/* ---- 正文 ---- */
+.doc { flex:1; min-width:0; background:var(--doc-bg); display:flex; flex-direction:column;
+       backdrop-filter:saturate(1.4); -webkit-backdrop-filter:saturate(1.4); }
+/* 标题条:写当前在看哪一份（Home / 某个项目 / 某个筛选），不是应用名——应用名在左栏顶上。
+   底色比正文深一档，让这一条读起来是顶栏的一部分，与左栏的应用名连成一条。
+   右侧留出 96px 是给浮在上面的收起/关闭钮，否则窗口窄下来标题会顶到它们身上。 */
+.dtitle { height:44px; flex-shrink:0; display:flex; align-items:center; justify-content:center;
+          padding:0 96px 0 18px; font-size:14.5px; font-weight:600; color:var(--fg);
+          letter-spacing:-.1px; background:rgba(0,0,0,.22); }
+.sbar { height:44px; flex-shrink:0; display:none; align-items:center; gap:10px; padding:0 18px;
+        border-bottom:.5px solid var(--line); }
+.sbar.on { display:flex; }
+.sbar svg { width:17px; height:17px; color:var(--tag); flex-shrink:0; }
+.sbar .echo { flex:1; font-size:15px; color:var(--fg); }
+.q-key { color:var(--tag); }
+.body { flex:1; overflow-y:auto; padding:14px 22px 50px 24px; }
+
+.proj { position:relative; padding-left:20px; }
+.proj::before { content:''; position:absolute; left:4px; top:25px; bottom:4px; width:1px; background:var(--line); }
+.proj.fold::before { display:none; }
+.dot { position:absolute; left:0; top:8px; width:10px; height:10px; border-radius:50%;
+       border:1.6px solid var(--dot); cursor:pointer; }
+.dot:hover { border-color:var(--dot-full); }
+.dot.full { background:var(--dot-full); border-color:var(--dot-full); }
+.p-ttl { font-size:16px; font-weight:700; color:var(--fg); padding:2px 0; letter-spacing:-.1px; }
+.item { display:flex; gap:8px; padding:3px 0 3px 22px; font-size:15.5px; color:var(--fg); }
+.item.lv2 { padding-left:46px; font-size:14.5px; }
+.dash { color:var(--dash); flex-shrink:0; cursor:pointer; user-select:none; }
+.dash:hover { color:var(--dot-full); }
+.txt { min-width:0; }
+.item.done .txt { text-decoration:line-through; text-decoration-thickness:1.1px;
+                  text-decoration-color:var(--done-line); color:var(--done-fg); }
+.item.doing .dash { color:var(--dot-full); }
+.tag { color:var(--tag); margin-left:8px; font-size:14px; }
+/* 截止日：平常与别的标签同色，压线才上色。过期最重、当天次之——两档就够，
+   再多颜色会让整列看起来都在报警。 */
+.tag.due.today { color:#e0a33b; }
+.tag.due.over { color:#e0563b; font-weight:600; }
+/* 新增：悬停在项目标题上才出现，平时不占位 */
+.p-add { margin-left:8px; color:var(--tag); font-size:15px; line-height:1; opacity:0;
+         padding:0 4px; border-radius:5px; transition:opacity .12s; }
+.p-ttl:hover .p-add { opacity:.75; }
+.p-add:hover { opacity:1; background:rgba(127,127,127,.16); }
+/* 就地改标题：输入框套在原位置上，字号字色都跟着正文，不做成一个显眼的表单控件 */
+.edit { width:100%; max-width:640px; font:inherit; color:var(--fg); background:rgba(127,127,127,.14);
+        border:none; border-radius:5px; outline:none; padding:0 6px; }
+/* 行右键菜单 */
+.menu { position:fixed; display:none; min-width:150px; padding:5px; border-radius:9px; z-index:20;
+        background:var(--side-bg); backdrop-filter:blur(30px); -webkit-backdrop-filter:blur(30px);
+        box-shadow:0 12px 34px rgba(0,0,0,.4); }
+.menu.on { display:block; }
+.m-row { padding:6px 12px; border-radius:6px; font-size:14px; color:var(--side-fg); cursor:default;
+         white-space:nowrap; }
+.m-row:hover { background:rgba(127,127,127,.18); }
+/* @ 补全:跟着输入框走的一小张列表。选中项用实色高亮（原版即如此，键盘选择要一眼看见落点） */
+.tagmenu { position:fixed; display:none; min-width:220px; padding:4px; border-radius:8px; z-index:24;
+           background:var(--side-bg); backdrop-filter:blur(30px); -webkit-backdrop-filter:blur(30px);
+           box-shadow:0 12px 34px rgba(0,0,0,.45); }
+.tagmenu.on { display:block; }
+.t-row { display:flex; align-items:baseline; gap:10px; padding:5px 10px; border-radius:5px;
+         font-size:14px; color:var(--side-fg); cursor:default; white-space:nowrap; }
+.t-row.on { background:#2f6fd0; color:#fff; }
+.t-n { font-weight:600; }
+.t-d { font-size:12.5px; color:var(--side-h); }
+.t-row.on .t-d { color:rgba(255,255,255,.72); }
+.note { padding:2px 0 2px 22px; font-size:14.5px; color:var(--note); }
+.empty { color:var(--note); padding:20px 22px; font-size:14px; }
+
+/* ---- Go to Anything ---- */
+.mask { position:fixed; inset:0; display:none; background:rgba(0,0,0,.20); }
+.mask.on { display:block; }
+.palette { position:absolute; left:50%; top:14%; transform:translateX(-50%); width:560px; max-width:82vw;
+           border-radius:11px; overflow:hidden; box-shadow:0 18px 50px rgba(0,0,0,.42);
+           background:var(--side-bg); backdrop-filter:blur(30px); }
+.palette input { width:100%; padding:16px 20px; border:none; outline:none; background:none;
+                 font:22px/1 inherit; color:var(--side-fg); }
+.palette input::placeholder { color:var(--side-h); }
+.plist { max-height:46vh; overflow-y:auto; padding:4px 8px 10px; border-top:.5px solid var(--line); }
+.p-row { padding:5px 14px; font-size:14.5px; color:var(--side-fg); border-radius:7px; cursor:default; }
+.p-row.on { background:var(--hot); color:#fff; }
+.p-h { padding:8px 14px 2px; font-size:12.5px; font-weight:600; color:var(--side-h); }
+
+/* ---- 窄屏:两栏改成一次只看一栏 ------------------------------------------------
+   桌面是「项目 | 正文」并排。390px 上正文栏只剩两百多像素,每个词竖排成一列,
+   完全读不了(2026-08-24 手机实见)。改成栈式:.app 上的 data-m 决定看哪一栏,
+   点项目进正文,标题条左边的返回退回项目。宽屏不读 data-m,不受影响。 */
+@media (max-width: 820px), (max-height: 520px) and (pointer: coarse) {
+  .app { height: 100dvh; }
+  .side { width: 100%; }
+  .app[data-m="doc"] .side { display: none; }
+  .app[data-m="side"] .doc { display: none; }
+  .m-back { display: inline-flex !important; align-items: center; justify-content: center;
+    position: absolute; left: 2px; top: 0; width: 44px; height: 44px; z-index: 3;
+    border: none; background: none; color: var(--ink, currentColor); cursor: pointer; }
+  .side-row, .p-row, .m-row, .t-row { min-height: 44px; display: flex; align-items: center; }
+  .edit, .palette input { font-size: 16px !important; }
+  .palette { width: calc(100vw - 24px); max-width: none; }
+  .doc { position: relative; }        /* 返回钮是 .doc 的绝对定位子元素 */
+}
+.m-back { display: none; }
+</style></head><body>
+
+<div class="app">
+  <div class="side">
+    <!-- 应用名在左栏顶上,与正文那条标题同高:左边是「这是什么应用」,右边是「此刻在看哪一份」。
+         双击可改,改的是应用登记里的名字(程序坞、应用格跟着变),不是这一页的局部标签。 -->
+    <div class="app-name" id="appname" title="双击改名">TaskNote</div>
+    <div class="side-list" id="side"></div>
+  </div>
+  <div class="doc">
+    <!-- 文档标题条:原版把它放在正文这一侧(左栏顶上是空的),分栏线因此能一路通到顶。
+         Desk 的页头在 chromeless 下只剩右上角那几枚钮,标题由这里写。 -->
+    <!-- 返回钮放在标题条外面:renderTitle() 每次重绘都会重写 #dtitle 的内容,
+         放里面会被一起抹掉(2026-08-24 实测按钮根本不在 DOM 里)。 -->
+    <button class="m-back" id="mBack" type="button" title="回到项目">
+      <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor"
+           stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+    </button>
+    <div class="dtitle" id="dtitle">TaskNote</div>
+    <div class="sbar" id="sbar">
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.9">
+        <circle cx="8.6" cy="8.6" r="6.1"/><path d="M13.2 13.2 18 18" stroke-linecap="round"/></svg>
+      <div class="echo" id="echo"></div>
+    </div>
+    <div class="body" id="body"><div class="empty">读取中…</div></div>
+  </div>
+</div>
+<div class="mask" id="mask"><div class="palette">
+  <input id="pq" placeholder="Go to Anything" spellcheck="false"><div class="plist" id="plist"></div>
+</div></div>
+<div class="menu" id="menu"></div>
+<div class="tagmenu" id="tagmenu"></div>
+
+<script>
+const SEARCHES = { 'Today': '@today', 'Not Done': 'not @done' };
+const esc = s => String(s).replace(/[&<>]/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;' }[c]));
+const api = (u, o) => fetch(u, o).then(r => r.ok ? r.json() : r.json().then(j => Promise.reject(new Error(j.error || r.status))));
+
+const S = { flows: [], focus: null, search: null, fold: new Set(), sel: 'Home' };
+
+/* ---------- 拉数据：工作流清单 + 各自的 TASKS.md ---------- */
+async function load() {
+  const doms = await api('/workbench/domains');
+  const list = doms.filter(d => d.id && !String(d.id).includes(':'));
+  S.flows = await Promise.all(list.map(async d => {
+    let t = { items: [], done: 0, total: 0 };
+    try { t = await api('/workbench/domains/' + encodeURIComponent(d.id) + '/tasks'); } catch {}
+    return { id: d.id, name: d.name || d.id, items: t.items || [], done: t.done || 0, total: t.total || 0 };
+  }));
+  S.flows = S.flows.filter(f => f.total > 0);
+  render();
+}
+
+/* flow 注记（URL 编码、| 分阶段、+ 分支）展开成子行；fdone 标完成 */
+function stages(it) {
+  if (!it.flow) return [];
+  const done = new Set(String(it.fdone || '').split(',').map(x => x.trim()).filter(Boolean));
+  const out = [];
+  String(it.flow).split('|').forEach((seg, i) => {
+    seg.split('+').forEach((node, j) => {
+      let name = node; try { name = decodeURIComponent(node); } catch {}
+      // 坐标 i.j 要带出去:节点没有自己的 id,改名与勾完成都靠它在 flow / fdone 里定位
+      out.push({ title: name, done: done.has(i + '.' + j), i, j, key: i + '.' + j });
+    });
+  });
+  return out;
+}
+
+/* 节点写回:flow 串按坐标换掉一个名字，fdone 按坐标增删一个坐标。两者都在父任务那一行上，
+   所以走的仍是 op:set，只是带的是 flow/fdone 而不是 title/state。 */
+function stageCommit(f, it, st, name, done) {
+  const segs = String(it.flow || '').split('|').map(s => s.split('+'));
+  if (!segs[st.i] || segs[st.i][st.j] === undefined) return post(f, {});   // 清单已变,重拉
+  segs[st.i][st.j] = encodeURIComponent(name);
+  const set = new Set(String(it.fdone || '').split(',').map(x => x.trim()).filter(Boolean));
+  done ? set.add(st.key) : set.delete(st.key);
+  return post(f, { op: 'set', line: it.line, expect: it.title,
+                   flow: segs.map(s => s.join('+')).join('|'),
+                   fdone: [...set].join(',') });
+}
+
+/* 节点的编辑文本只有 @done 一个 tag:它没有截止日与备忘,那两个字段挂在任务上。 */
+function editStage(f, it, st, el) {
+  if (el.querySelector('input')) return;
+  const oldText = st.title + (st.done ? ' @done' : '');
+  const inp = document.createElement('input');
+  inp.className = 'edit'; inp.value = oldText;
+  el.textContent = ''; el.appendChild(inp);
+  inp.focus(); inp.setSelectionRange(oldText.length, oldText.length);
+  let fin = false;
+  const commit = async (save) => {
+    if (fin) return; fin = true;
+    hideTagMenu();
+    const txt = inp.value;
+    if (!save || txt.trim() === oldText.trim()) { render(); return; }
+    const next = parseRow(txt);
+    if (!next.title) { render(); return; }
+    await stageCommit(f, it, st, next.title, next.state === 'done');
+  };
+  inp.onkeydown = (e) => {
+    if (tagMenuKey(e, inp)) return;
+    if (e.key === 'Enter') { e.preventDefault(); commit(true); }
+    else if (e.key === 'Escape') { e.preventDefault(); commit(false); }
+  };
+  inp.oninput = () => showTagMenu(inp);
+  inp.onblur = () => setTimeout(() => commit(true), 120);
+}
+
+function visible(it) {
+  if (!S.search) return true;
+  if (S.search === 'Not Done') return it.state !== 'done';
+  // Today:今天及更早到期的,加上在办的。原来只看 doing——那是「在做什么」,不是「今天该做什么」;
+  // 有了 due 之后,压线和过期的才是这一档要捞出来的东西。
+  if (S.search === 'Today') {
+    if (it.state === 'done') return false;
+    return it.state === 'doing' || (!!it.due && it.due <= todayStr());
+  }
+  return true;
+}
+
+/* ---------- 左栏 ---------- */
+function renderSide() {
+  const tags = ['@done', '@doing'];
+  const row = (label, k, v, hot, n) =>
+    `<div class="side-row${S.sel === v ? ' on' + (hot ? ' hot' : '') : ''}" data-k="${k}" data-v="${esc(v)}">` +
+    (n != null ? `<span class="n">${n}</span>` : '') + esc(label) + `</div>`;
+  document.getElementById('side').innerHTML =
+    row('Home', 'home', 'Home') +
+    `<div class="side-h">Projects</div>` +
+    S.flows.map(f => row(f.name, 'p', f.id, false, f.total - f.done)).join('') +
+    `<div class="side-h">Searches</div>` +
+    Object.keys(SEARCHES).map(s => row(s, 's', s, true)).join('') +
+    `<div class="side-h">Tags</div>` + tags.map(t => row(t, 't', t)).join('');
+}
+
+/* ---------- 正文 ---------- */
+function renderBody() {
+  const b = document.getElementById('body');
+  b.innerHTML = '';
+  const flows = S.focus ? S.flows.filter(f => f.id === S.focus) : S.flows;
+  if (!flows.length) { b.innerHTML = '<div class="empty">没有任务。</div>'; return; }
+
+  for (const f of flows) {
+    const shown = f.items.filter(visible);
+    const folded = S.fold.has(f.id);
+    const box = document.createElement('div');
+    box.className = 'proj' + (folded || !shown.length ? ' fold' : '');
+
+    const dot = document.createElement('div');
+    dot.className = 'dot' + (folded || shown.length < f.items.length ? ' full' : '');
+    dot.title = folded ? '展开' : '折叠';
+    dot.onclick = () => { S.fold.has(f.id) ? S.fold.delete(f.id) : S.fold.add(f.id); render(); };
+
+    const h = document.createElement('div');
+    h.className = 'p-ttl'; h.textContent = f.name + ':';
+    // 新增入口挂在项目标题上,悬停才出现:一份清单最常做的是读和勾,加一条是次要动作,
+    // 常驻一枚加号会在每个标题右边留一个洞。
+    const add = document.createElement('button');
+    add.className = 'p-add'; add.type = 'button'; add.textContent = '+'; add.title = '新增任务';
+    add.onclick = () => addTask(f);
+    h.appendChild(add);
+    box.append(dot, h);
+
+    if (!folded) for (const it of shown) {
+      const r = document.createElement('div');
+      r.className = 'item ' + (it.state === 'done' ? 'done' : it.state === 'doing' ? 'doing' : '');
+      const d = document.createElement('span');
+      d.className = 'dash'; d.textContent = '–'; d.title = '点一下切换：待办、进行中、完成';
+      d.onclick = () => cycle(f, it);
+      const t = document.createElement('span');
+      t.className = 'txt'; t.textContent = it.title;
+      if (it.state === 'done') t.insertAdjacentHTML('beforeend', '<span class="tag">@done</span>');
+      if (it.state === 'doing') t.insertAdjacentHTML('beforeend', '<span class="tag">@doing</span>');
+      // @due 排在 @created 前面:一条任务先关心什么时候要交,再关心什么时候记下的。
+      // 过期与今天到期各给一个类,颜色在 CSS 里定——列表扫一眼就该看出哪条压线了。
+      if (it.due) t.insertAdjacentHTML('beforeend',
+        `<span class="tag due${dueClass(it)}">@due(${esc(it.due)})</span>`);
+      if (it.c) t.insertAdjacentHTML('beforeend', `<span class="tag">@created(${esc(it.c.slice(0, 10))})</span>`);
+      if (it.note) t.insertAdjacentHTML('beforeend', `<span class="tag">@note(${esc(it.note.slice(0, 8))})</span>`);
+      // 单击即进编辑,整行连 tag 一起当文本改（原版就是个文本编辑器,tag 是正文的一部分,
+      // 不是只读的装饰）。回车提交、Esc 撤销、失焦即提交。
+      t.onclick = () => editRow(f, it, t);
+      // 右键给这一行的其余动作(设/清截止、删除)。它们比改标题低频,不占常驻位置。
+      r.oncontextmenu = (ev) => { ev.preventDefault(); rowMenu(ev, f, it); };
+      r.append(d, t);
+      box.appendChild(r);
+
+      for (const st of stages(it)) {
+        const s = document.createElement('div');
+        s.className = 'item lv2' + (st.done ? ' done' : '');
+        const sd = document.createElement('span'); sd.className = 'dash'; sd.textContent = '–';
+        sd.title = '点一下切换完成';
+        sd.onclick = () => stageCommit(f, it, st, st.title, !st.done);
+        const stx = document.createElement('span'); stx.className = 'txt'; stx.textContent = st.title;
+        if (st.done) stx.insertAdjacentHTML('beforeend', '<span class="tag">@done</span>');
+        stx.onclick = () => editStage(f, it, st, stx);   // 与任务行同样是单击即编辑
+        s.append(sd, stx);
+        box.appendChild(s);
+      }
+    }
+    b.appendChild(box);
+  }
+}
+
+/* ---------- 应用名 ---------- */
+/* 名字的来源是应用登记(.workbench/apps.json),不是这一页的常量:程序坞、应用格、Desk 页头
+   读的都是那一份，只改页面上这一处会让几处对不上。启动时按 page 认出自己那条并回填。
+   TaskNote 保留 taskpaper 的 page/uid，既有打开记录与任务数据不迁移。 */
+let APP = null;
+async function loadAppSelf() {
+  try {
+    const reg = await api('/workbench/apps');
+    for (const arr of Object.values(reg || {})) {
+      const hit = (arr || []).find(a => a && a.page === 'taskpaper');
+      if (hit) { APP = hit; break; }
+    }
+  } catch {}
+  if (APP && APP.label) document.getElementById('appname').textContent = APP.label;
+}
+
+/* 双击改名:整条登记原样回写，只换 label。POST 带 uid 就是「更新已有应用」，
+   服务端会保留 uid/author/created 覆盖其余——所以必须把整条传回去，漏字段等于删字段。 */
+function editAppName(el) {
+  if (!APP || el.querySelector('input')) return;
+  const old = APP.label || 'TaskNote';
+  const inp = document.createElement('input');
+  inp.className = 'edit'; inp.value = old;
+  el.textContent = ''; el.appendChild(inp);
+  inp.focus(); inp.select();
+  let done = false;
+  const commit = async (save) => {
+    if (done) return; done = true;
+    const v = inp.value.trim();
+    el.textContent = old;
+    if (!save || !v || v === old) return;
+    try {
+      await api('/workbench/apps', {
+        method: 'POST', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ app: { ...APP, label: v }, targets: APP.targets }) });
+      APP.label = v;
+      el.textContent = v;
+      // 宿主那几份缓存(程序坞、应用格、页头标题)自己不知道登记变了,发一条让它重拉
+      try { window.parent.postMessage({ type: 'desktron-app-updated', uid: APP.uid, label: v }, '*'); } catch {}
+    } catch (e) { alert('改名失败：' + e.message); }
+  };
+  inp.onkeydown = (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); commit(true); }
+    else if (e.key === 'Escape') { e.preventDefault(); commit(false); }
+  };
+  inp.onblur = () => commit(true);
+}
+document.getElementById('appname').ondblclick = (e) => editAppName(e.currentTarget);
+
+/* ---------- 编辑 ---------- */
+/* 写回一律经这一个口子：改动先落盘、再用应答里的整份清单覆盖本地，失败原样退回。
+   乐观更新那套（先改本地再发请求）在这里不划算：行号会随增删漂移，一次写偏就整列错位。 */
+async function post(f, body, revert) {
+  try {
+    const r = await api('/workbench/domains/' + encodeURIComponent(f.id) + '/tasks', {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(body) });
+    if (r.items) { f.items = r.items; f.done = r.done; f.total = r.total; }
+    try { window.parent.postMessage({ type: 'app-used' }, '*'); } catch {}
+    render();
+    return true;
+  } catch (e) {
+    if (revert) revert();
+    render();
+    alert('写回失败：' + e.message);
+    return false;
+  }
+}
+
+/* 可写的 tag：状态两个 + 截止一个。@created 与 @note 不进编辑文本——它们由系统维护
+   （创建时刻、备忘绑定），放进来只会被误删,而删掉之后没法从这一行还原。 */
+const TAGS = [
+  { name: '@done', desc: '标记完成' },
+  { name: '@doing', desc: '标记进行中' },
+  { name: '@due', desc: '截止日,括号里写 YYYY-MM-DD', arg: true },
+];
+
+/* 一行的编辑文本 = 标题 + 可写 tag。显示态那些 @created/@note 不在其中。 */
+function rowText(it) {
+  const t = [it.title];
+  if (it.state === 'done') t.push('@done');
+  else if (it.state === 'doing') t.push('@doing');
+  if (it.due) t.push('@due(' + it.due + ')');
+  return t.join(' ');
+}
+
+/* 编辑文本 → {title, state, due}。tag 从哪个位置写都认，抽走之后剩下的是标题。 */
+function parseRow(text) {
+  let s = ' ' + String(text || '') + ' ';
+  let state = 'todo', due = null;
+  s = s.replace(/\s@done\b/gi, () => { state = 'done'; return ' '; });
+  s = s.replace(/\s@doing\b/gi, () => { if (state === 'todo') state = 'doing'; return ' '; });
+  s = s.replace(/\s@due\(([^)]*)\)/gi, (_m, v) => { due = v.trim(); return ' '; });
+  s = s.replace(/\s@due\b/gi, () => { due = ''; return ' '; });   // 光写了个 @due 没给日期 = 清掉
+  return { title: s.replace(/\s+/g, ' ').trim(), state, due };
+}
+
+/* 就地编辑一整行。expect 一律用原标题：后端据它判断这一行有没有被别处改过
+   （agent 也在写同一份文件），而两次写回之间标题还没变，所以都用得上。 */
+function editRow(f, it, el) {
+  if (el.querySelector('input')) return;
+  const oldTitle = it.title, oldText = rowText(it);
+  const inp = document.createElement('input');
+  inp.className = 'edit'; inp.value = oldText;
+  el.textContent = ''; el.appendChild(inp);
+  inp.focus();
+  // 光标落在末尾而不是全选:单击进来多半是要接着写,全选会让下一个键把整行冲掉
+  inp.setSelectionRange(oldText.length, oldText.length);
+  let done = false;
+  const commit = async (save) => {
+    if (done) return; done = true;
+    hideTagMenu();
+    const txt = inp.value;
+    if (!save || txt.trim() === oldText.trim()) { render(); return; }
+    const next = parseRow(txt);
+    if (!next.title) { render(); return; }   // 标题被删空:不接受,原样退回
+    // 截止先写:它不动标题,后面那次 set 的 expect 仍然对得上。反过来会 409。
+    if (next.due !== null && next.due !== (it.due || '')) {
+      const ok = await post(f, { op: 'annot', line: it.line, expect: oldTitle, key: 'due', value: next.due });
+      if (!ok) return;
+    }
+    if (next.title !== oldTitle || next.state !== it.state) {
+      await post(f, { op: 'set', line: it.line, expect: oldTitle, title: next.title, state: next.state });
+    } else { render(); }
+  };
+  inp.onkeydown = (e) => {
+    if (tagMenuKey(e, inp)) return;          // 补全菜单开着时,方向键与回车归它
+    if (e.key === 'Enter') { e.preventDefault(); commit(true); }
+    else if (e.key === 'Escape') { e.preventDefault(); commit(false); }
+  };
+  inp.oninput = () => showTagMenu(inp);
+  inp.onblur = () => setTimeout(() => commit(true), 120);   // 让点菜单项的那一下先跑完
+}
+
+/* ---------- @ 补全 ---------- */
+/* 光标前最近的一个 @ 到光标之间没有空格，就认为正在写 tag，据它过滤候选。 */
+let TM = { on: false, sel: 0, list: [], at: 0 };
+function tagPrefix(inp) {
+  const pos = inp.selectionStart || 0;
+  const head = inp.value.slice(0, pos);
+  const at = head.lastIndexOf('@');
+  if (at < 0) return null;
+  const frag = head.slice(at);
+  if (/[\s()]/.test(frag)) return null;
+  return { at, frag };
+}
+function showTagMenu(inp) {
+  const p = tagPrefix(inp);
+  const m = document.getElementById('tagmenu');
+  if (!p) return hideTagMenu();
+  const list = TAGS.filter(t => t.name.startsWith(p.frag.toLowerCase()));
+  if (!list.length) return hideTagMenu();
+  TM = { on: true, sel: 0, list, at: p.at };
+  paintTagMenu(inp);
+}
+function paintTagMenu(inp) {
+  const m = document.getElementById('tagmenu');
+  m.innerHTML = '';
+  TM.list.forEach((t, i) => {
+    const b = document.createElement('div');
+    b.className = 't-row' + (i === TM.sel ? ' on' : '');
+    b.innerHTML = '<span class="t-n"></span><span class="t-d"></span>';
+    b.querySelector('.t-n').textContent = t.name;
+    b.querySelector('.t-d').textContent = t.desc;
+    b.onmousedown = (e) => { e.preventDefault(); pickTag(inp, i); };
+    m.appendChild(b);
+  });
+  const r = inp.getBoundingClientRect();
+  m.style.left = Math.min(r.left, innerWidth - 240) + 'px';
+  m.style.top = Math.min(r.bottom + 4, innerHeight - TM.list.length * 28 - 12) + 'px';
+  m.classList.add('on');
+}
+function hideTagMenu() { TM.on = false; document.getElementById('tagmenu').classList.remove('on'); }
+function tagMenuKey(e, inp) {
+  if (!TM.on) return false;
+  if (e.key === 'ArrowDown') { e.preventDefault(); TM.sel = (TM.sel + 1) % TM.list.length; paintTagMenu(inp); return true; }
+  if (e.key === 'ArrowUp') { e.preventDefault(); TM.sel = (TM.sel - 1 + TM.list.length) % TM.list.length; paintTagMenu(inp); return true; }
+  if (e.key === 'Enter' || e.key === 'Tab') { e.preventDefault(); pickTag(inp, TM.sel); return true; }
+  if (e.key === 'Escape') { e.preventDefault(); hideTagMenu(); return true; }   // 只关菜单,不退出编辑
+  return false;
+}
+/* 选中一项:替换掉正在写的那截。带参数的（@due）补上括号并把光标停在里面，
+   免得还要自己去数括号——默认值给今天,不想要覆盖掉即可。 */
+function pickTag(inp, i) {
+  const t = TM.list[i]; if (!t) return;
+  const pos = inp.selectionStart || 0;
+  const head = inp.value.slice(0, TM.at), tail = inp.value.slice(pos);
+  const ins = t.arg ? t.name + '(' + todayStr() + ')' : t.name + ' ';
+  inp.value = head + ins + tail;
+  const caret = t.arg ? head.length + t.name.length + 1 : head.length + ins.length;
+  inp.setSelectionRange(caret, t.arg ? caret + todayStr().length : caret);
+  hideTagMenu();
+  inp.focus();
+}
+
+/* 新增一条：落在该工作流清单末尾（后端 add 就是追加），随即进入改标题状态由人写完。 */
+async function addTask(f) {
+  const title = prompt('新任务（' + f.name + '）');
+  if (!title || !title.trim()) return;
+  await post(f, { op: 'add', title: title.trim() });
+}
+
+/* 行右键菜单：设/清截止、删除。菜单是页内自绘的一层，位置跟着鼠标。 */
+function rowMenu(ev, f, it) {
+  const m = document.getElementById('menu');
+  const items = [
+    { label: it.due ? '改截止日…' : '设截止日…', fn: () => setDue(f, it) },
+    ...(it.due ? [{ label: '清除截止日', fn: () => post(f, { op: 'annot', line: it.line, expect: it.title, key: 'due', value: '' }) }] : []),
+    { label: '删除这条', fn: () => { if (confirm('删除「' + it.title + '」？')) post(f, { op: 'del', line: it.line, expect: it.title }); } },
+  ];
+  m.innerHTML = '';
+  for (const x of items) {
+    const b = document.createElement('div');
+    b.className = 'm-row'; b.textContent = x.label;
+    b.onclick = () => { m.classList.remove('on'); x.fn(); };
+    m.appendChild(b);
+  }
+  m.style.left = Math.min(ev.clientX, innerWidth - 170) + 'px';
+  m.style.top = Math.min(ev.clientY, innerHeight - m.childElementCount * 30 - 12) + 'px';
+  m.classList.add('on');
+}
+
+async function setDue(f, it) {
+  const v = prompt('截止日（YYYY-MM-DD，留空清除）', it.due || todayStr());
+  if (v === null) return;
+  await post(f, { op: 'annot', line: it.line, expect: it.title, key: 'due', value: v.trim() });
+}
+
+function todayStr() {
+  const d = new Date(), p = (n) => String(n).padStart(2, '0');
+  return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
+}
+/* 过期 / 今天到期各给一个类。已完成的不标——它已经交付了，再红下去只是噪音。 */
+function dueClass(it) {
+  if (!it.due || it.state === 'done') return '';
+  const t = todayStr();
+  return it.due < t ? ' over' : it.due === t ? ' today' : '';
+}
+
+/* 状态轮转：todo → doing → done → todo，落回 TASKS.md */
+async function cycle(f, it) {
+  const next = it.state === 'todo' ? 'doing' : it.state === 'doing' ? 'done' : 'todo';
+  const prev = it.state;
+  it.state = next; render();
+  try {
+    const r = await api('/workbench/domains/' + encodeURIComponent(f.id) + '/tasks', {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ op: 'set', line: it.line, expect: it.title, state: next }) });
+    f.items = r.items || f.items; f.done = r.done; f.total = r.total;
+    try { window.parent.postMessage({ type: 'app-used' }, '*'); } catch {}
+    render();
+  } catch (e) { it.state = prev; render(); alert('写回失败：' + e.message); }
+}
+
+function renderSearch() {
+  const bar = document.getElementById('sbar');
+  bar.classList.toggle('on', !!S.search);
+  if (S.search) document.getElementById('echo').innerHTML =
+    esc(SEARCHES[S.search]).replace(/\b(not)\b/g, '<span class="q-key">$1</span>');
+}
+
+function render() { renderSide(); renderBody(); renderSearch(); renderTitle(); }
+
+/* 标题跟着左栏的选中项走:项目写它的名字，其余（Home、Today、Not Done、标签）原样写。
+   S.sel 存的是选中行的值——项目那一档存的是 id，要换回名字。 */
+function renderTitle() {
+  const f = S.flows.find(x => x.id === S.sel);
+  document.getElementById('dtitle').textContent = f ? f.name : (S.sel || 'Home');
+}
+
+/* ---------- 交互 ---------- */
+document.getElementById('side').onclick = e => {
+  const r = e.target.closest('.side-row'); if (!r) return;
+  const { k, v } = r.dataset;
+  if (k === 'home') { S.focus = null; S.search = null; S.sel = 'Home'; }
+  else if (k === 'p') { S.focus = v; S.search = null; S.sel = v; }
+  else if (k === 's') { S.search = v; S.focus = null; S.sel = v; }
+  else if (k === 't') { S.search = v === '@done' ? null : 'Today'; S.sel = v; }
+  render();
+  mGo('doc');                  // 挑完项目就该看内容
+};
+// 窄屏那一路的层级。宽屏两栏并排,这个值没有任何作用(样式里只有窄屏读它)。
+function mGo(level) {
+  const a = document.querySelector('.app'); if (a) a.dataset.m = level;
+}
+document.getElementById('mBack').onclick = () => mGo('side');
+mGo('doc');                    // 开局停在正文:项目栏是导航,内容才是来看的
+// 宿主明确告诉应用它住在主区还是紧凑侧栏。首次进入紧凑侧栏默认看正文；同一模式的
+// 重复通知不覆盖用户随后点返回打开的项目栏。
+let taskpaperLayout = '';
+function applyTaskpaperLayout(mode) {
+  const next = mode === 'compact' ? 'compact' : 'main';
+  if (next === taskpaperLayout) return;
+  taskpaperLayout = next;
+  document.documentElement.dataset.layout = next;
+  if (next === 'compact') mGo('doc');
+}
+addEventListener('message', e => {
+  if (e.origin !== location.origin || !e.data || e.data.type !== 'desktron-layout') return;
+  applyTaskpaperLayout(e.data.mode);
+});
+applyTaskpaperLayout(document.documentElement.dataset.layout);
+
+const mask = document.getElementById('mask'), pq = document.getElementById('pq');
+function palette(q = '') {
+  const hit = s => !q || s.toLowerCase().includes(q.toLowerCase());
+  const rows = [];
+  if (hit('Home')) rows.push(['home', 'Home', 'Home']);
+  const proj = S.flows.filter(f => hit(f.name));
+  const srch = Object.keys(SEARCHES).filter(hit);
+  document.getElementById('plist').innerHTML =
+    rows.map(([k, v, l], i) => `<div class="p-row${i === 0 ? ' on' : ''}" data-k="${k}" data-v="${v}">${esc(l)}</div>`).join('') +
+    (proj.length ? `<div class="p-h">Projects</div>` + proj.map(f =>
+      `<div class="p-row" data-k="p" data-v="${esc(f.id)}">${esc(f.name)}</div>`).join('') : '') +
+    (srch.length ? `<div class="p-h">Searches</div>` + srch.map(s =>
+      `<div class="p-row" data-k="s" data-v="${s}">${s}</div>`).join('') : '');
+}
+document.getElementById('plist').onclick = e => {
+  const r = e.target.closest('.p-row'); if (!r) return;
+  const { k, v } = r.dataset;
+  if (k === 'home') { S.focus = null; S.search = null; S.sel = 'Home'; }
+  else if (k === 'p') { S.focus = v; S.search = null; S.sel = v; }
+  else { S.search = v; S.focus = null; S.sel = v; }
+  mask.classList.remove('on'); render();
+};
+pq.oninput = () => palette(pq.value);
+mask.onclick = e => { if (e.target === mask) mask.classList.remove('on'); };
+/* 右键菜单：点别处即收。用 mousedown 而不是 click——菜单项自己的 click 要先跑完。 */
+addEventListener('mousedown', e => {
+  const m = document.getElementById('menu');
+  if (m.classList.contains('on') && !m.contains(e.target)) m.classList.remove('on');
+});
+
+addEventListener('keydown', e => {
+  if (e.key === 'Escape') { document.getElementById('menu').classList.remove('on'); return mask.classList.remove('on'); }
+  if (!(e.metaKey || e.ctrlKey)) return;
+  const k = e.key.toLowerCase();
+  if (k === 'p') { e.preventDefault(); pq.value = ''; palette(); mask.classList.add('on'); pq.focus(); }
+  if (k === 'd') { e.preventDefault(); document.body.classList.toggle('light'); }
+  if (k === 'r') { e.preventDefault(); load(); }
+});
+
+loadAppSelf();   // 名字与任务清单互不依赖，各拉各的，谁先回来谁先显示
+load().catch(e => { document.getElementById('body').innerHTML =
+  '<div class="empty">读取失败：' + esc(e.message) + '</div>'; });
+</script></body></html>

@@ -1,0 +1,20 @@
+{
+  "schema": 1,
+  "file": "icon.png",
+  "upstream": "https://github.com/excalidraw/excalidraw",
+  "version": "v0.18.1",
+  "commit": "a2ec2889babf7d2295469c6d90ebe77fae57df84",
+  "upstream_file": "public/apple-touch-icon.png",
+  "source_url": "https://github.com/excalidraw/excalidraw/blob/a2ec2889babf7d2295469c6d90ebe77fae57df84/public/apple-touch-icon.png",
+  "sha256": "b6a6c4464319a3b1faeb310bcb8ac24061b2301ce19ddc81453675bbd461ed8f",
+  "dimensions": [
+    180,
+    180
+  ],
+  "transformation": "None: exact upstream PNG bytes; existing CSS controls display size.",
+  "license": "MIT",
+  "license_file": "../../vendor/licenses/excalidraw-v0.18.1-LICENSE.txt",
+  "license_upstream_file": "LICENSE",
+  "license_sha256": "1352d204fdb90d5e482c13139d848bc2c9300a9a7de358a0a558a23e72d0d8be",
+  "limits": "Copyright permission only. No trademark permission, affiliation or endorsement is asserted."
+}

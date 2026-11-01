@@ -1,0 +1,311 @@
+version: 2
+kind: desktron-prompt-manifest
+capabilities: prompt.capabilities
+
+# The manifest stores semantics and differences only.  Source locations live in
+# prompt_sources.py; engine × runtime expansion is compiler output.
+segments:
+  desk.style:
+    version: 3
+    refresh: repository
+    title: 中文表达约束
+    status: active
+    owner: desk-foundation
+    source: desk.style
+    lifecycle: binding
+    priority: 900
+    max_chars: 2500
+    sensitivity: internal
+    history: private
+    targets: {}
+    delivery:
+      default: {carrier: system_append, cadence: binding, status: current}
+      overrides:
+        claude-shepherd: {carrier: system_snapshot}
+        codex: {carrier: developer_instructions, cadence: turn}
+
+  desk.role:
+    version: 1
+    refresh: binding
+    title: Desk 业务角色正文
+    status: active
+    owner: desk-foundation
+    source: desk.role
+    lifecycle: binding
+    priority: 880
+    max_chars: 16384
+    sensitivity: internal
+    history: private
+    targets: {}
+    delivery:
+      default: {carrier: system_append, cadence: binding, status: current}
+      overrides:
+        claude-shepherd: {carrier: system_snapshot}
+        codex: {carrier: developer_instructions, cadence: turn}
+    notes: 未选择 desk_role 时不生成正文；角色变化要求重新建立静态提示边界。
+
+  desk.grounding:
+    version: 6
+    refresh: turn
+    title: Desk 系统约定与取用入口
+    status: active
+    owner: desk-foundation
+    source: desk.grounding
+    lifecycle: turn
+    priority: 850
+    max_chars: 50000
+    sensitivity: internal
+    history: private
+    targets: {}
+    delivery:
+      default: {carrier: system_append, cadence: turn, status: current}
+      overrides:
+        claude-shepherd: {carrier: system_snapshot}
+        codex-native: {carrier: developer_instructions}
+        codex-shepherd: {carrier: developer_instructions}
+    notes: 包含 orientation、AGENTS、principles、工作流原则，以及文档与历史资料导航；技能只保留按需查找入口，不枚举名称。
+
+  desk.scene:
+    version: 3
+    refresh: turn
+    title: 工作流项目导航
+    status: active
+    owner: desk-foundation
+    source: desk.scene
+    lifecycle: turn
+    priority: 700
+    max_chars: 50000
+    sensitivity: internal
+    history: exclude
+    targets: {}
+    delivery:
+      default: {carrier: system_append, cadence: turn, status: current}
+      overrides:
+        claude-shepherd: {carrier: system_snapshot}
+        codex: {carrier: developer_instructions}
+    notes: 项目摘要、资料入口和仓库约定是低信任应用数据；每轮重算，不包含任务清单。名称仅走原生控制通道，不进入 Prompt。
+
+  desk.task-review:
+    version: 2
+    refresh: on_change
+    title: 关联任务证据缺项提醒
+    status: active
+    owner: desk-foundation
+    source: desk.task-review
+    lifecycle: on_change
+    priority: 725
+    max_chars: 2400
+    sensitivity: internal
+    history: exclude
+    targets: {}
+    delivery:
+      default: {carrier: system_append, cadence: on_change, status: current}
+      overrides:
+        claude-shepherd: {carrier: system_snapshot}
+        codex: {carrier: developer_instructions}
+    notes: 只含启用契约且已核对的关联任务缺项，每个证据状态提醒一次，最多三项；不注入证据正文。
+
+  claude.memory-boundary:
+    version: 3
+    refresh: repository
+    title: Claude 个人记忆与 Desk 记忆边界
+    status: active
+    owner: engine-claude
+    source: claude.memory-boundary
+    lifecycle: binding
+    priority: 760
+    max_chars: 1000
+    sensitivity: internal
+    history: private
+    targets: {engines: [claude]}
+    delivery:
+      default: {carrier: system_append, cadence: binding, status: current}
+      overrides:
+        claude-shepherd:
+          carrier: system_snapshot
+          status: current
+          notes: unified-v1 由统一系统装配投递；旧 private Binding 保留原始快照。
+
+  claude.tool-intent:
+    version: 2
+    refresh: repository
+    title: Claude Bash 工具摘要规则
+    status: active
+    owner: engine-claude
+    source: claude.tool-intent
+    lifecycle: binding
+    priority: 740
+    max_chars: 1000
+    sensitivity: internal
+    history: private
+    targets: {engines: [claude]}
+    delivery:
+      default: {carrier: system_append, cadence: binding, status: current}
+      overrides:
+        claude-shepherd:
+          carrier: system_snapshot
+          status: current
+          notes: unified-v1 由统一系统装配投递；旧 private Binding 保留原始快照。
+
+  claude.bash-cwd:
+    version: 2
+    refresh: repository
+    title: Shepherd Claude Bash 工作目录策略
+    status: active
+    owner: engine-claude
+    source: claude.bash-cwd
+    lifecycle: binding
+    priority: 820
+    max_chars: 500
+    sensitivity: internal
+    history: private
+    targets: {engines: [claude], runtimes: [shepherd]}
+    delivery:
+      default: {carrier: system_snapshot, cadence: binding, status: current}
+
+  codex.channel:
+    version: 3
+    refresh: repository
+    title: Codex-family 输出通道约定
+    status: active
+    owner: engine-codex
+    source: codex.channel
+    lifecycle: turn
+    priority: 790
+    max_chars: 1500
+    sensitivity: internal
+    history: private
+    targets: {engines: [codex]}
+    delivery:
+      default: {carrier: developer_instructions, cadence: turn, status: current}
+
+  codex.tool-intent:
+    version: 2
+    refresh: repository
+    title: Codex-family 工具摘要规则
+    status: active
+    owner: engine-codex
+    source: codex.tool-intent
+    lifecycle: turn
+    priority: 740
+    max_chars: 1500
+    sensitivity: internal
+    history: private
+    targets: {engines: [codex]}
+    delivery:
+      default: {carrier: developer_instructions, cadence: turn, status: current}
+
+  codex.skill-discovery:
+    version: 3
+    refresh: repository
+    title: Codex 技能发现说明
+    status: review
+    owner: engine-codex
+    source: codex.skill-discovery
+    lifecycle: turn
+    priority: 650
+    max_chars: 1000
+    sensitivity: internal
+    history: private
+    targets: {engines: [codex]}
+    delivery:
+      default: {carrier: developer_instructions, cadence: turn, status: current}
+
+  pi.runtime-rules:
+    version: 3
+    refresh: repository
+    title: Pi 工具摘要与安全规则
+    status: active
+    owner: engine-pi
+    source: pi.runtime-rules
+    lifecycle: binding
+    priority: 760
+    max_chars: 2000
+    sensitivity: internal
+    history: private
+    targets: {engines: [pi]}
+    delivery:
+      default: {carrier: system_append, cadence: binding, status: current}
+
+  shepherd.history:
+    version: 2
+    refresh: binding
+    title: Shepherd 归档回读说明
+    status: active
+    owner: project-shepherd
+    source: shepherd.history
+    lifecycle: binding
+    priority: 710
+    max_chars: 2000
+    sensitivity: internal
+    history: private
+    targets: {runtimes: [shepherd]}
+    delivery:
+      default: {carrier: system_append, cadence: binding, status: current}
+      overrides:
+        claude-shepherd: {carrier: system_snapshot}
+        codex-shepherd: {carrier: developer_instructions, cadence: turn}
+
+  claude.native-default:
+    version: 1
+    refresh: native
+    title: Claude Code 原生默认提示
+    status: external
+    owner: engine-claude
+    source: claude.native-default
+    lifecycle: native
+    priority: 1000
+    max_chars: 100000
+    sensitivity: internal
+    history: native
+    targets: {engines: [claude], runtimes: [native]}
+    delivery:
+      default: {carrier: native_context, cadence: native, status: external}
+
+  claude.native-context:
+    version: 1
+    refresh: native
+    title: Claude Code 上下文文件、技能和 Hook 注入
+    status: external
+    owner: engine-claude
+    source: claude.native-context
+    lifecycle: native
+    priority: 690
+    max_chars: 100000
+    sensitivity: internal
+    history: native
+    targets: {engines: [claude]}
+    delivery:
+      default: {carrier: native_context, cadence: native, status: external}
+
+  codex.native-default:
+    version: 1
+    refresh: native
+    title: Codex-family 原生系统提示
+    status: external
+    owner: engine-codex
+    source: codex.native-default
+    lifecycle: native
+    priority: 1000
+    max_chars: 100000
+    sensitivity: internal
+    history: native
+    targets: {engines: [codex]}
+    delivery:
+      default: {carrier: native_context, cadence: native, status: external}
+
+  pi.native-default:
+    version: 2
+    refresh: native
+    title: Pi 原生系统提示与工具说明
+    status: external
+    owner: engine-pi
+    source: pi.native-default
+    lifecycle: native
+    priority: 1000
+    max_chars: 100000
+    sensitivity: internal
+    history: native
+    targets: {engines: [pi]}
+    delivery:
+      default: {carrier: native_context, cadence: native, status: external}

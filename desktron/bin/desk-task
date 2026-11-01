@@ -1,0 +1,117 @@
+#!/usr/bin/env python3
+"""AI 持久任务账本：跨引擎创建、认领、推进、阻塞、完成或释放任务。"""
+import argparse
+import json
+import os
+import sys
+import urllib.error
+import urllib.parse
+import urllib.request
+
+PORT = os.environ.get("DESKTRON_UI_PORT", "7765")
+BASE = f"http://127.0.0.1:{PORT}"
+ME = os.environ.get("DESKTRON_SESSION_ID", "")
+ENGINE = os.environ.get("DESKTRON_ENGINE", "")
+
+
+def _get(path):
+    with urllib.request.urlopen(BASE + path, timeout=20) as r:
+        return json.loads(r.read().decode("utf-8") or "{}")
+
+
+def _post(path, body):
+    req = urllib.request.Request(BASE + path, method="POST",
+        data=json.dumps(body, ensure_ascii=False).encode("utf-8"),
+        headers={"content-type": "application/json"})
+    try:
+        with urllib.request.urlopen(req, timeout=20) as r:
+            return json.loads(r.read().decode("utf-8") or "{}")
+    except urllib.error.HTTPError as exc:
+        try:
+            detail = json.loads(exc.read().decode("utf-8") or "{}")
+        except Exception:
+            detail = {"error": str(exc)}
+        raise RuntimeError(detail.get("error") or str(exc))
+
+
+def _domain(explicit):
+    if explicit:
+        return explicit
+    if not ME:
+        return ""
+    try:
+        return str(_get("/session/" + urllib.parse.quote(ME) + "/situation").get("domain") or "")
+    except Exception:
+        return ""
+
+
+def main(argv=None):
+    ap = argparse.ArgumentParser(prog="desk-task", description=__doc__)
+    ap.add_argument("--domain", default="", help="工作流 id；默认取当前会话")
+    ap.add_argument("--task-id", default="", help="任务稳定 id；没有时可用 --title 匹配")
+    ap.add_argument("--title", default="", help="任务标题；create 必填，其余可用于唯一匹配")
+    ap.add_argument("--revision", type=int, help="乐观锁 revision")
+    ap.add_argument("--done", help="本轮已验证结果，最多 160 字；空串清除")
+    ap.add_argument("--next", help="下一步，最多 160 字；空串清除")
+    ap.add_argument("--blocker", help="阻碍，最多 160 字；空串清除")
+    ap.add_argument("--contract-file", help="完成条件 JSON 文件；首次启用后固定")
+    ap.add_argument("--evidence-file", help="交付证据 JSON 数组文件；只填摘要与引用，禁止凭证")
+    ap.add_argument("--receipt", default="", help="幂等事件 id；默认不设")
+    ap.add_argument("--all", action="store_true", help="list 包含已完成任务，用于新建前查重")
+    ap.add_argument("action", choices=("create", "claim", "progress", "block", "complete", "release", "list", "show", "review"))
+    ns = ap.parse_args(argv)
+    domain = _domain(ns.domain)
+    if not domain:
+        ap.error("无法确定工作流；请使用 --domain")
+    if ns.action in ("list", "show"):
+        data = _get("/workbench/domains/" + urllib.parse.quote(domain) + "/tasks")
+        if ns.action == 'show':
+            if not ns.task_id:
+                ap.error('show 需要 --task-id')
+            item = next((x for x in data.get('items') or [] if x.get('t') == ns.task_id), None)
+            if not item:
+                ap.error('任务不存在')
+            print(json.dumps(item, ensure_ascii=False))
+            return 0
+        for item in data.get("items") or []:
+            if item.get("state") == "done" and not ns.all:
+                continue
+            row = item.get("ledger") or {}
+            print(f"{item.get('t','-')}\t{item.get('state')}\t{item.get('title')}\t{row.get('next','')}")
+        return 0
+    change = {"intent": ns.action}
+    for key in ("title", "done", "next", "blocker"):
+        value = getattr(ns, key)
+        if value is not None and (key != 'title' or value):
+            change[key] = value
+    for key in ('contract', 'evidence'):
+        path = getattr(ns, key + '_file')
+        if path:
+            try:
+                with open(path, 'rb') as f:
+                    raw = f.read(32769)
+                if len(raw) > 32768:
+                    raise ValueError('JSON 文件超过 32KiB')
+                change[key] = json.loads(raw)
+            except (OSError, ValueError) as exc:
+                ap.error(f'{key}: {exc}')
+    if ns.task_id:
+        change["task_id"] = ns.task_id
+    body = {"op": "ledger", "change": change,
+            "session": {"id": ME, "engine": ENGINE}, "receipt": ns.receipt}
+    if ns.revision is not None:
+        body["revision"] = ns.revision
+    try:
+        result = _post("/workbench/domains/" + urllib.parse.quote(domain) + "/tasks", body)
+    except Exception as exc:
+        print(str(exc), file=sys.stderr)
+        return 1
+    task, state = result.get("task") or {}, result.get("ledger") or {}
+    print(json.dumps({"ok": True, "domain": domain, "task_id": task.get("t"),
+                      "title": task.get("title"), "state": task.get("state"),
+                      "revision": state.get("revision"), "review": state.get('review')}, ensure_ascii=False))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

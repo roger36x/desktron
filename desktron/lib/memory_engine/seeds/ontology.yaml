@@ -1,0 +1,63 @@
+# 记忆工作层的 curator 实例本体(memory-engine 种子,首次写入时物化到实例根)。
+# 只声明 git 外工作层,无 sub_kbs。记忆笔记 kind=judgment。
+# kernel 不写死 band 名,work_layer 在此声明即生效。
+
+name: memory-worklayer
+description: 记忆工作层(git 外)。分层:<ws>/{journal,notes,sot} + _sealed(红线封存,用户全局)。
+
+instance:
+  sub_kbs: []
+  role_layers: [global, domain]
+  # 语义正交分层:journal 发生过什么(流水) / notes 信过什么(判断档案) / sot 现在是什么(当前权威态,有界)。
+  # promote=把成熟笔记结论合入 SOT 文档(人审编辑);sealed 与分层正交(红线)。
+  work_layer:
+    # draft: false(2026-08-21 补)——两个免闸 band 都不是草稿:journal 是 append-only 流水
+    # (单文件,不是逐条笔记),notes 是记忆引擎整篇重写的项目模型,免闸只为绕过交互闸。
+    # 不声明的话 gc/temp-clean 会把 gated:false 当「草稿、可回收」,拿它们当年轻代扫——
+    # temp clean --yes 会连 journal 带 notes 一次清空,gc 满预算 triage 时 journal.md 因无
+    # frontmatter 质量恒 0、总是最先被淘汰(见 desktron 侧 curator.config.draft_bands)。
+    journal: {dir: "{topic}/journal", gated: false, draft: false}   # 流水:隔离 recap 自动或按请求生成;只追加,不进索引
+    # notes 免闸(机器直写)但进索引:否则 show/search 查不到,读闸指向的命令落空,这一层对 agent 不存在
+    notes:  {dir: "{topic}/notes", gated: false, indexed: true, draft: false}
+    # SOT:当前权威态,过闸人审。两类内容按 kind 分——judgment 是叙事口径文档(起手全文注入),
+    # fact 是领域事实(给索引,按需取)。2026-08-03 起 knowledge/ 的知识条目并入本层。
+    sot:    {dir: "{topic}/sot"}
+    sealed: {dir: "_sealed", containment: true}    # 红线封存:用户全局,不出本机
+  index_file: INDEX.md
+
+# kind=fact 笔记可用的 doc_type(记忆多为 judgment,此处备查)
+doc_types: [glossary, aliases, landscape, reference, runbook]
+
+# confidence 三档,全部自动:reported(无可核来源)< documented(一个独立来源)< corroborated(两个及以上)
+confidence_levels: [reported, documented, corroborated]
+
+freshness:
+  glossary:  {fresh: 12, aging: 24}
+  reference: {fresh: 6,  aging: 12}
+  landscape: {fresh: 6,  aging: 12}
+  runbook:   {fresh: 3,  aging: 6}
+  aliases:   {fresh: 12, aging: 24}
+
+# —— 骨架:sot 的结构化那一半 ——
+# 类型化实体与边,手工录入、机器校验,答「谁是谁、什么依赖什么」。叙事在 notes / sot / sealed;
+# 实体的 profile_doc 单向指向叙事笔记,笔记不反指,两侧各自演化。
+entities:
+  person:
+    fields: [profile_doc, chinese_name, org, role, domains]
+    requires: []
+  team:
+    fields: [profile_doc, org]
+    requires: []
+  service:
+    fields: [profile_doc, psm, tier]
+    requires: []
+  project:
+    fields: [profile_doc, status]
+    requires: []
+
+edges:
+  reports_to: {from: person, to: person}
+  member_of:  {from: person, to: team}
+  owns:       {from: person, to: service}
+  leads:      {from: person, to: project}
+  depends_on: {from: service, to: service}

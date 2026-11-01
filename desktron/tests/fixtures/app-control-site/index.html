@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Desk App Control Fixture</title>
+<style>
+  body{font:15px/1.5 system-ui;max-width:760px;margin:40px auto;padding:0 20px}
+  form,section{display:grid;gap:12px;margin:22px 0;padding:18px;border:1px solid #ccc;border-radius:12px}
+  label{display:grid;gap:5px}button,input,select{font:inherit;padding:8px}iframe{width:100%;height:90px}
+</style>
+<h1>Agent Control 验收站</h1>
+<p id="slow">分段内容等待中</p>
+<form id="application">
+  <label>姓名<input name="name" autocomplete="name" required></label>
+  <label>邮箱<input name="email" type="email" autocomplete="email" required></label>
+  <label>地区<select name="region"><option value="cn">中国</option><option value="sg">新加坡</option></select></label>
+  <label><input name="agree" type="checkbox">我已核对内容</label>
+  <label>密码（必须由用户填写）<input name="password" type="password" autocomplete="current-password"></label>
+  <label>附件（必须由用户接管）<input name="attachment" type="file"></label>
+  <button id="submit" type="submit">提交申请</button>
+</form>
+<section>
+  <button id="rerender" type="button">模拟 SPA 重绘</button>
+  <div id="spa"><button type="button">重绘前按钮</button></div>
+  <button id="confirm" type="button">模拟系统确认框</button>
+  <output id="result">尚未提交</output>
+</section>
+<iframe title="跨域区域" src="https://example.com/"></iframe>
+<script>
+  let submitted = false, renders = 0;
+  setTimeout(() => { document.querySelector('#slow').textContent = '分段内容已加载'; }, 700);
+  document.querySelector('#rerender').onclick = () => {
+    renders += 1;
+    document.querySelector('#spa').innerHTML = `<button type="button">重绘后按钮 ${renders}</button>`;
+  };
+  document.querySelector('#confirm').onclick = () => window.confirm('确认继续测试？');
+  document.querySelector('#application').onsubmit = (event) => {
+    event.preventDefault();
+    if (submitted) { document.querySelector('#result').textContent = '错误：发生重复提交'; return; }
+    submitted = true;
+    document.querySelector('#submit').disabled = true;
+    document.querySelector('#result').textContent = '提交成功（仅一次）';
+  };
+</script>
+</html>

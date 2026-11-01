@@ -1,0 +1,698 @@
+<!doctype html><html lang="zh"><head><meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">  <!-- 没有这一条,手机上顶层打开这一页会按 980px 排版,窄屏的媒体查询根本不匹配 -->
+<title>备忘录</title>
+<style>
+* { box-sizing:border-box; }
+html,body { height:100%; }
+body { margin:0; background:#191919; color:#eaeaea; overflow:hidden;
+       font:13px/1.5 -apple-system,BlinkMacSystemFont,"PingFang SC","Helvetica Neue",sans-serif;
+       -webkit-font-smoothing:antialiased; }
+button { font:inherit; background:none; border:none; color:inherit; cursor:pointer; padding:0; }
+[hidden] { display:none !important; }
+svg { display:block; }
+
+.app { display:flex; height:100vh; --side-w:215px; --list-w:320px; }
+
+/* ---- 可拖分栏线：5px 命中带，负外边距压在 1px 边框两侧，不改变布局宽度 ---- */
+.divider { width:5px; flex-shrink:0; margin:0 -2px; cursor:col-resize; position:relative; z-index:5;
+           background:transparent; }
+.divider:hover, .divider.dragging { background:rgba(255,255,255,.10); }
+.app.side-collapsed #divSide { display:none; }
+body.col-dragging { user-select:none; -webkit-user-select:none; cursor:col-resize; }
+
+/* ================= 左栏：文件夹 ================= */
+.sidebar { width:var(--side-w); flex-shrink:0; background:#191919; border-right:1px solid rgba(255,255,255,.08);
+           display:flex; flex-direction:column; }
+.app.side-collapsed .sidebar { display:none; }
+.side-head { display:flex; align-items:center; justify-content:space-between; flex-shrink:0;
+             padding:8px 10px 6px; }
+.side-btn { display:flex; align-items:center; justify-content:center; width:26px; height:24px;
+            border-radius:5px; color:#9a9a9e; }
+.side-btn:hover { background:rgba(255,255,255,.07); color:#d8d8d8; }
+.side-btn svg { width:15px; height:15px; }
+.side-scroll { flex:1; overflow-y:auto; padding:0 8px 10px; }
+.side-row { display:flex; align-items:center; gap:7px; padding:5px 8px; border-radius:6px;
+            color:#d8d8d8; cursor:default; margin-bottom:1px; user-select:none; }
+.side-row svg { width:16px; height:16px; color:#9a9a9e; flex-shrink:0; }
+.side-row .side-name { flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.side-row .side-count { color:#7c7c80; font-size:12px; }
+.side-row:hover { background:rgba(255,255,255,.04); }
+.side-row.active { background:rgba(255,255,255,.10); }
+.side-row.active .side-name { color:#e0b647; font-weight:500; }
+.side-row.active svg { color:#e0b647; }
+
+/* ================= 主区（工具条 + 中栏 + 右栏） ================= */
+.main { flex:1; min-width:0; display:flex; flex-direction:column; }
+
+.toolbar { display:flex; align-items:center; height:44px; flex-shrink:0;
+           background:#232325; border-bottom:1px solid rgba(255,255,255,.08); }
+.tb-list { width:var(--list-w); flex-shrink:0; display:flex; align-items:center; justify-content:space-between;
+           padding:0 10px; border-right:1px solid rgba(255,255,255,.08); height:100%; }
+.tb-list .tb-slot { display:flex; align-items:center; }
+.tb-editor { flex:1; min-width:0; display:flex; align-items:center; gap:2px; padding:0 12px; }
+.tb-btn { display:flex; align-items:center; justify-content:center; width:30px; height:26px;
+          border-radius:5px; color:#b8b8bc; }
+.tb-btn:hover { background:rgba(255,255,255,.08); }
+.tb-btn:disabled { color:#555; cursor:default; }
+.tb-btn:disabled:hover { background:none; }
+.tb-btn svg { width:17px; height:17px; }
+.tb-spacer { flex:1; }
+.tb-text-btn { color:#b8b8bc; font-size:12px; padding:3px 10px; border-radius:5px;
+               border:1px solid rgba(255,255,255,.14); margin-right:8px; }
+.tb-text-btn:hover { background:rgba(255,255,255,.08); }
+.search { display:flex; align-items:center; gap:5px; background:rgba(255,255,255,.07);
+          border-radius:7px; padding:5px 10px; width:220px; }
+.search svg { width:14px; height:14px; color:#8a8a8e; flex-shrink:0; }
+.search input { background:none; border:none; outline:none; color:#eaeaea; font:13px inherit; width:100%; }
+.search input::placeholder { color:#8a8a8e; }
+
+.content { flex:1; min-height:0; display:flex; }
+
+/* ================= 中栏：备忘录列表 ================= */
+/* 三栏同底(#191919,与左栏一致):原来中右两栏是 #1c1c1e,比左栏亮一档。
+   那一档差别不承载任何信息——三栏是并列的工作面,不是层级关系,分色只会让人去找它的含义。
+   栏与栏之间已有 1px 分隔线,不靠底色区分。 */
+.list-pane { width:var(--list-w); flex-shrink:0; overflow-y:auto; background:#191919;
+             border-right:1px solid rgba(255,255,255,.08); padding:6px 8px 16px; }
+.list-group { font-size:13px; font-weight:700; color:#fafafa; padding:12px 8px 6px; user-select:none; }
+.note-item { padding:9px 10px 8px; border-radius:7px; cursor:default; position:relative; }
+.note-item + .note-item { border-top:1px solid rgba(255,255,255,.08); }
+.note-item.active, .note-item.active + .note-item { border-top-color:transparent; }
+.note-item.active { background:#3a3a3c; }
+.ni-title { font-size:13px; font-weight:600; color:#fafafa; white-space:nowrap; overflow:hidden;
+            text-overflow:ellipsis; }
+.ni-sub { display:flex; gap:6px; font-size:12px; color:#9a9a9e; margin-top:2px; }
+.ni-date { flex-shrink:0; }
+.ni-preview { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:#8a8a8e; }
+.ni-folder { display:flex; align-items:center; gap:4px; font-size:11px; color:#6e6e72; margin-top:3px; }
+.ni-folder svg { width:11px; height:11px; flex-shrink:0; }
+.list-empty { color:#6e6e72; font-size:12.5px; text-align:center; padding:48px 12px; }
+
+/* ================= 右栏：编辑器 ================= */
+.editor-pane { flex:1; min-width:0; display:flex; flex-direction:column; background:#191919; }
+.editor-date { text-align:center; font-size:11px; color:#8a8a8e; padding:14px 16px 2px; flex-shrink:0;
+               user-select:none; }
+.editor { flex:1; min-height:0; overflow-y:auto; outline:none; padding:10px 24px 32px;
+          font-size:14px; line-height:1.65; color:#e6e6e6; white-space:pre-wrap; word-break:break-word; }
+.editor > div:first-child { font-size:23px; font-weight:700; line-height:1.35; color:#fafafa;
+                            margin-bottom:4px; }
+.editor:empty::before { content:attr(data-ph); color:#5c5c60; font-size:23px; font-weight:700; }
+.editor-blank { flex:1; display:flex; align-items:center; justify-content:center;
+                color:#6e6e72; font-size:15px; user-select:none; }
+#editor a.note-link { color: #d6a642; text-decoration: none; border-bottom: 1px solid rgba(214,166,66,.4); cursor: pointer; word-break: break-all; }
+#editor a.note-link:hover { border-bottom-color: #d6a642; }
+#editor img { max-width: min(440px, 100%); display: block; margin: 6px 0; border-radius: 8px; }
+
+/* 窄屏与紧凑宿主共用栈式布局：文件夹 → 列表 → 正文。
+   栏宽直接设在面板上，不受桌面拖拽保存的 CSS 变量影响。 */
+.app.stack-layout { height:100dvh; }
+.app.stack-layout .divider { display:none; }
+.app.stack-layout .sidebar, .app.stack-layout .list-pane,
+.app.stack-layout .editor-pane { width:100%; min-width:0; }
+.app.stack-layout[data-m="folders"] .main { display:none; }
+.app.stack-layout[data-m="list"] .sidebar, .app.stack-layout[data-m="note"] .sidebar { display:none; }
+.app.stack-layout[data-m="list"] .editor-pane, .app.stack-layout[data-m="list"] .tb-editor { display:none; }
+.app.stack-layout[data-m="note"] .list-pane, .app.stack-layout[data-m="note"] .tb-list { display:none; }
+.app.stack-layout[data-m="note"] .tb-editor, .app.stack-layout .tb-list { width:100%; }
+.app.stack-layout .toolbar { height:48px; }
+.app.stack-layout .tb-btn, .app.stack-layout .side-btn { width:40px; height:40px; touch-action:manipulation; }
+.app.stack-layout .search input, .app.stack-layout .editor { font-size:16px; }
+.app.stack-layout .note-item, .app.stack-layout .side-row { min-height:44px; }
+.m-back { display:none; }
+.app.stack-layout .m-back { display:inline-flex; }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="side-head">
+      <button class="side-btn" id="btnSideCollapse" title="收起左栏">
+        <svg viewBox="0 0 32 32" data-desk-scattered="27" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="25" height="22" rx="5"/><path d="M12 5.8v20.4"/></g></svg>
+      </button>
+      <button class="side-btn" id="btnNewFolder" title="新建文件夹">
+        <svg viewBox="0 0 32 32" data-desk-scattered="28" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M16 5v22M5 16h22"/></g></svg>
+      </button>
+    </div>
+    <div class="side-scroll" id="sideScroll"></div>
+  </aside>
+  <div class="divider" id="divSide" title="拖动调整文件夹栏宽度"></div>
+
+  <div class="main">
+    <div class="toolbar">
+      <div class="tb-list">
+        <button class="tb-btn m-back" id="mBackFolders" title="回到文件夹" type="button">
+          <svg viewBox="0 0 32 32" width="17" height="17" data-desk-scattered="29" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><g transform="translate(32 0) scale(-1 1)"><g transform="translate(-1.65323 -1.08592) scale(1.06787)"><path d="m11 3.5 10.2 10.6c1.1 1.1 1.1 2.7 0 3.8L11 28.5" stroke-width="2.6"/></g></g></g></svg>
+        </button>
+        <span class="tb-slot">
+          <button class="tb-btn" id="btnSideExpand" title="展开左栏" hidden>
+            <svg viewBox="0 0 32 32" data-desk-scattered="27" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="25" height="22" rx="5"/><path d="M12 5.8v20.4"/></g></svg>
+          </button>
+        </span>
+        <button class="tb-btn" id="btnNew" title="新建备忘录">
+          <svg viewBox="0 0 32 32" data-desk-scattered="30" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><g transform="translate(-3.08656 -2.14561) scale(1.13189)"><path d="m7.2 20.7 12.7-14.5a3.5 3.5 0 0 1 5.3 4.7l-12.7 14.5-6.3 2.1Z"/><path d="m17.4 9.1 5.3 4.7M18.5 28h9"/></g></g></svg>
+        </button>
+      </div>
+      <div class="tb-editor">
+        <button class="tb-btn m-back" id="mBackList" title="回到列表" type="button">
+          <svg viewBox="0 0 32 32" width="17" height="17" data-desk-scattered="29" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><g transform="translate(32 0) scale(-1 1)"><g transform="translate(-1.65323 -1.08592) scale(1.06787)"><path d="m11 3.5 10.2 10.6c1.1 1.1 1.1 2.7 0 3.8L11 28.5" stroke-width="2.6"/></g></g></g></svg>
+        </button>
+        <button class="tb-btn" id="btnDelete" title="删除">
+          <svg viewBox="0 0 32 32" data-desk-scattered="31" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><g transform="translate(-1.17296 -1.07234) scale(1.07331)"><path d="M6.5 10v13.5c0 3 1.8 5 4.8 5h9.4c3 0 4.8-2 4.8-5V10M4 7.8h24M10.5 7.8V5.4c0-1.4.8-2.1 2.3-2.1h6.4c1.5 0 2.3.7 2.3 2.1v2.4M12.3 13.8v9M19.7 13.8v9"/></g></g></svg>
+        </button>
+        <span class="tb-spacer"></span>
+        <button class="tb-text-btn" id="btnEmptyTrash" hidden>清空</button>
+        <button class="tb-text-btn" id="btnRestore" hidden>恢复</button>
+        <div class="search">
+          <svg viewBox="0 0 32 32" data-desk-scattered="36" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.7" cy="13.7" r="8.7"/><path d="m20.1 20.1 6.7 6.7"/></g></svg>
+          <input id="searchInput" placeholder="搜索" autocomplete="off">
+        </div>
+      </div>
+    </div>
+
+    <div class="content">
+      <section class="list-pane" id="noteList"></section>
+      <div class="divider" id="divList" title="拖动调整列表栏宽度"></div>
+      <section class="editor-pane">
+        <div class="editor-date" id="editorDate"></div>
+        <div class="editor" id="editor" contenteditable="plaintext-only" data-ph=""></div>
+        <div class="editor-blank" id="editorBlank" hidden>无所选备忘录</div>
+      </section>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+// ---- 持久化：沿用旧便笺簿的 localStorage 键与结构，向后兼容 ----
+const DOMAIN = new URLSearchParams(location.search).get('domain') || 'thinking';
+const STORAGE_KEY = 'notepad_' + DOMAIN;
+const DEFAULT_FOLDER = '备忘录';
+const SVG_FOLDER = '<svg viewBox="0 0 32 32" data-desk-scattered="37" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10V8c0-2.8 1.6-4.5 4.5-4.5h5c1.1 0 1.8.4 2.5 1.2l1.8 2H25c2.7 0 4 1.6 4 4.3v13.5c0 2.8-1.6 4.2-4.3 4.2H7.3C4.6 28.7 3 27.3 3 24.5V10Z"/></g></svg>';
+const SVG_TRASH = '<svg viewBox="0 0 32 32" data-desk-scattered="31" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><g transform="translate(-1.17296 -1.07234) scale(1.07331)"><path d="M6.5 10v13.5c0 3 1.8 5 4.8 5h9.4c3 0 4.8-2 4.8-5V10M4 7.8h24M10.5 7.8V5.4c0-1.4.8-2.1 2.3-2.1h6.4c1.5 0 2.3.7 2.3 2.1v2.4M12.3 13.8v9M19.7 13.8v9"/></g></g></svg>';
+const SVG_ALL = '<svg viewBox="0 0 32 32" data-desk-scattered="38" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10V8c0-2.8 1.6-4.5 4.5-4.5h5c1.1 0 1.8.4 2.5 1.2l1.8 2H25c2.7 0 4 1.6 4 4.3v13.5c0 2.8-1.6 4.2-4.3 4.2H7.3C4.6 28.7 3 27.3 3 24.5V10Z"/></g></svg>';
+
+let notes = [];            // [{id, content, updated, folder?, deleted?, deletedAt?}]
+let folders = [];          // 自建文件夹名（不含默认「备忘录」）
+let activeId = null;
+let view = { kind: 'all', folder: null };   // all | folder | trash
+let query = '';
+const SIDE_KEY = STORAGE_KEY + '_side_collapsed';
+let sideCollapsed = localStorage.getItem(SIDE_KEY) === '1';
+const SIDE_W = { key: STORAGE_KEY + '_side_w', cssVar: '--side-w', min: 160, max: 320, def: 215 };
+const LIST_W = { key: STORAGE_KEY + '_list_w', cssVar: '--list-w', min: 240, max: 480, def: 320 };
+
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+function el(id) { return document.getElementById(id); }
+function esc(s) { const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
+function folderOf(n) { return n.folder || DEFAULT_FOLDER; }
+
+// ---- load / save:持久化在后端文件 domains/<域>/notepad.json(agent 在会话 cwd 直接读写同一份);
+// 旧 localStorage 数据首载迁移一次后清除。 ----
+const API = '/workbench/notepad?domain=' + encodeURIComponent(DOMAIN);
+function _parseLegacy(raw) {
+  try {
+    const d = JSON.parse(raw);
+    if (d && d.notes && Array.isArray(d.notes))
+      return { notes: d.notes, folders: Array.isArray(d.folders) ? d.folders : [] };
+    if (Array.isArray(d))
+      return { notes: d.map(n => ({ id: n.id || uid(), content: n.content || '', updated: n.updated || new Date().toISOString() })), folders: [] };
+    if (d && typeof d === 'object' && d.content)
+      return { notes: [{ id: uid(), content: d.content, updated: new Date().toISOString() }], folders: [] };
+  } catch {}
+  return null;
+}
+function _allLegacy() {   // 扫全部旧 per-domain 键(notepad_<域>)合并;UI 偏好键(宽度/折叠)不算数据
+  const out = { notes: [], folders: [], keys: [] };
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (!k || !k.startsWith('notepad_') || /_side_collapsed$|_side_w$|_list_w$/.test(k)) continue;
+    const d = _parseLegacy(localStorage.getItem(k));
+    if (!d || !d.notes.length) continue;
+    out.keys.push(k);
+    for (const n of d.notes) if (!out.notes.some(x => x.id === n.id)) out.notes.push(n);
+    for (const f of d.folders) if (!out.folders.includes(f)) out.folders.push(f);
+  }
+  return out;
+}
+async function load() {
+  let d = null;
+  try { d = await (await fetch(API)).json(); } catch {}
+  if (d && Array.isArray(d.notes) && d.notes.length) {
+    notes = d.notes; folders = d.folders || []; activeId = d.activeId || (notes[0] && notes[0].id) || null;
+    return;
+  }
+  const legacy = _allLegacy();   // 后端还是空的:合并迁移全部旧 localStorage 实例,成功后清除旧键
+  if (legacy.notes.length) {
+    notes = legacy.notes; folders = legacy.folders; activeId = (notes[0] && notes[0].id) || null;
+    try {
+      const r = await fetch(API, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ notes, activeId, folders }) });
+      if (r.ok) legacy.keys.forEach(k => localStorage.removeItem(k));
+    } catch {}
+  }
+}
+let _pushT = null;
+let _userEmptied = false;   // 用户经删除操作清空过:允许空覆盖(后端防误清闸需要显式确认)
+function save() {
+  if (_pushT) clearTimeout(_pushT);
+  _pushT = setTimeout(() => {
+    _pushT = null;
+    fetch(API, { method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ notes, activeId, folders, allowEmpty: _userEmptied && !notes.length }) }).catch(() => {});
+  }, 250);
+}
+
+// ---- 时间格式 ----
+function fmtClock(d) {
+  let h = d.getHours(); const ap = h < 12 ? '上午' : '下午';
+  let h12 = h % 12; if (h12 === 0) h12 = 12;
+  return ap + h12 + ':' + String(d.getMinutes()).padStart(2, '0');
+}
+function fmtEditorDate(ts) {
+  const d = new Date(ts || Date.now());
+  return d.getFullYear() + '年' + (d.getMonth() + 1) + '月' + d.getDate() + '日 ' + fmtClock(d);
+}
+function dayDiff(ts) {
+  const d = new Date(ts), now = new Date();
+  const s = t => new Date(t.getFullYear(), t.getMonth(), t.getDate()).getTime();
+  return Math.round((s(now) - s(d)) / 86400000);
+}
+function fmtListDate(ts) {
+  const d = new Date(ts);
+  if (dayDiff(ts) <= 0) return fmtClock(d);
+  return d.getFullYear() + '/' + (d.getMonth() + 1) + '/' + d.getDate();
+}
+function groupLabel(ts) {
+  const days = dayDiff(ts);
+  if (days <= 0) return '今天';
+  if (days === 1) return '昨天';
+  if (days < 7) return '过去 7 天';
+  if (days < 30) return '过去 30 天';
+  const d = new Date(ts), now = new Date();
+  if (d.getFullYear() === now.getFullYear()) return (d.getMonth() + 1) + '月';
+  return d.getFullYear() + '年';
+}
+
+// ---- 数据视图 ----
+function titleOf(n) {
+  const first = (n.content || '').split('\n').find(l => l.trim());
+  return first ? first.trim().slice(0, 60) : '新备忘录';
+}
+function previewOf(n) {
+  const lines = (n.content || '').split('\n').map(l => l.trim()).filter(Boolean);
+  return lines.slice(1).join(' ').slice(0, 80) || '无其他文字';
+}
+function visibleNotes() {
+  let arr;
+  if (view.kind === 'trash') arr = notes.filter(n => n.deleted);
+  else if (view.kind === 'folder') arr = notes.filter(n => !n.deleted && folderOf(n) === view.folder);
+  else arr = notes.filter(n => !n.deleted);
+  if (query) {
+    const q = query.toLowerCase();
+    arr = arr.filter(n => (n.content || '').toLowerCase().includes(q));
+  }
+  return arr.sort((a, b) => (b.updated || '').localeCompare(a.updated || ''));
+}
+function activeNote() { return notes.find(n => n.id === activeId) || null; }
+
+// ---- 左栏 ----
+function sideRow(viewKind, folder, icon, name, count, extraCls) {
+  const isActive = view.kind === viewKind && (viewKind !== 'folder' || view.folder === folder);
+  return '<div class="side-row' + (isActive ? ' active' : '') + (extraCls ? ' ' + extraCls : '') +
+    '" data-view="' + viewKind + '"' + (folder ? ' data-folder="' + esc(folder) + '"' : '') + '>' +
+    icon + '<span class="side-name">' + esc(name) + '</span>' +
+    (count === null ? '' : '<span class="side-count">' + count + '</span>') + '</div>';
+}
+function renderSidebar() {
+  const alive = notes.filter(n => !n.deleted);
+  const trashCount = notes.length - alive.length;
+  let h = sideRow('all', null, SVG_ALL, '全部备忘录', alive.length);
+  h += sideRow('folder', DEFAULT_FOLDER, SVG_FOLDER, DEFAULT_FOLDER,
+               alive.filter(n => folderOf(n) === DEFAULT_FOLDER).length);
+  for (const f of folders) {
+    h += sideRow('folder', f, SVG_FOLDER, f, alive.filter(n => folderOf(n) === f).length);
+  }
+  h += sideRow('trash', null, SVG_TRASH, '最近删除', trashCount);
+  el('sideScroll').innerHTML = h;
+}
+
+// ---- 中栏 ----
+function renderList() {
+  const arr = visibleNotes();
+  const box = el('noteList');
+  if (arr.length === 0) {
+    box.innerHTML = '<div class="list-empty">' + (query ? '无结果' : '无备忘录') + '</div>';
+    return;
+  }
+  let h = '', lastGroup = null;
+  for (const n of arr) {
+    const g = groupLabel(n.updated);
+    if (g !== lastGroup) { h += '<div class="list-group">' + esc(g) + '</div>'; lastGroup = null; }
+    h += '<div class="note-item' + (n.id === activeId ? ' active' : '') + '" data-id="' + esc(n.id) + '">';
+    h += '<div class="ni-title">' + esc(titleOf(n)) + '</div>';
+    h += '<div class="ni-sub"><span class="ni-date">' + esc(fmtListDate(n.updated)) + '</span>' +
+         '<span class="ni-preview">' + esc(previewOf(n)) + '</span></div>';
+    h += '<div class="ni-folder">' + SVG_FOLDER + esc(folderOf(n)) + '</div>';
+    h += '</div>';
+    lastGroup = g;
+  }
+  box.innerHTML = h;
+}
+
+// ---- 右栏 ----
+const IMG_RE = /!\[([^\]]*)\]\(((?:domains\/[\w-]+(?:\/[\w-]+)?\/)?tasknotes\/assets\/[^)\s]+)\)/g;
+const LINK_RE = /\[([^\]\n]+)\]\((https?:\/\/[^)\s]+)\)/g;   // [标题](url):超链接标记,与工作流页备忘同一格式
+function imgSrc(rel) { return '/workbench/view?raw=1&path=' + encodeURIComponent(rel); }
+function appendTextRun(host, text) {   // 文本段过链接切分:[标题](url) → <a>,其余原样
+  const parts = String(text).split(LINK_RE);
+  for (let i = 0; i < parts.length; i += 3) {
+    if (parts[i]) host.appendChild(document.createTextNode(parts[i]));
+    if (parts[i + 2] !== undefined) {
+      const a = document.createElement('a');
+      a.className = 'note-link';
+      a.textContent = parts[i + 1] || parts[i + 2];
+      a.href = parts[i + 2];
+      a.dataset.url = parts[i + 2];
+      a.title = parts[i + 2];
+      a.contentEditable = 'false';
+      host.appendChild(a);
+    }
+  }
+}
+function setEditorContent(text) {
+  const ed = el('editor');
+  ed.innerHTML = '';
+  const lines = String(text || '').split('\n');
+  if (lines.length === 1 && lines[0] === '') return;
+  for (const line of lines) {
+    const div = document.createElement('div');
+    const parts = line.split(IMG_RE);   // 捕获组切分:[文本, alt, 路径, 文本, ...]
+    for (let i = 0; i < parts.length; i += 3) {
+      if (parts[i]) appendTextRun(div, parts[i]);
+      if (parts[i + 2] !== undefined) {
+        const img = document.createElement('img');
+        img.src = imgSrc(parts[i + 2]);
+        img.dataset.rel = parts[i + 2];
+        const wm = String(parts[i + 1] || '').match(/w=(\d+)/);
+        if (wm) img.style.width = wm[1] + 'px';
+        img.draggable = false;
+        div.appendChild(img);
+      }
+    }
+    if (!div.childNodes.length) div.innerHTML = '<br>';
+    ed.appendChild(div);
+  }
+}
+function getEditorText() {
+  const out = [];
+  const lineOf = (node) => {   // 一个顶层块 = 一行;行内 walk 文本/图片
+    let t = '';
+    const walk = (nd) => {
+      for (const n of nd.childNodes) {
+        if (n.nodeType === 3) t += n.textContent;
+        else if (n.nodeName === 'IMG') {
+          const w = parseInt(n.style.width, 10);
+          t += '![' + (w ? 'w=' + w : '图') + '](' + (n.dataset.rel || '') + ')';
+        } else if (n.nodeName === 'A') {
+          const u = n.dataset.url || n.getAttribute('href') || '';
+          t += '[' + (n.textContent || u).replace(/[\[\]]/g, '') + '](' + u + ')';
+        } else if (n.nodeName !== 'BR' && n.nodeType === 1) walk(n);
+      }
+    };
+    walk(node);
+    return t;
+  };
+  el('editor').childNodes.forEach(node => {
+    if (node.nodeType === 3) out.push(node.textContent);
+    else if (node.nodeName === 'BR') out.push('');
+    else if (node.nodeType === 1) out.push(lineOf(node));
+  });
+  return out.join('\n');
+}
+function renderEditor() {
+  const ed = el('editor'), blank = el('editorBlank'), date = el('editorDate');
+  const n = activeNote();
+  const inView = n && visibleNotes().some(x => x.id === n.id);
+  if (!n || !inView) {
+    ed.hidden = true; blank.hidden = false; date.textContent = '';
+    el('btnRestore').hidden = true;
+    el('btnEmptyTrash').hidden = view.kind !== 'trash' || !notes.some(x => x.deleted);
+    return;
+  }
+  ed.hidden = false; blank.hidden = true;
+  date.textContent = fmtEditorDate(n.updated);
+  ed.contentEditable = view.kind === 'trash' ? 'false' : 'plaintext-only';
+  el('btnRestore').hidden = view.kind !== 'trash';
+  el('btnEmptyTrash').hidden = view.kind !== 'trash';
+  if (getEditorText() !== (n.content || '')) setEditorContent(n.content || '');
+}
+function renderAll() { renderSidebar(); renderList(); renderEditor(); }
+
+// ---- 交互 ----
+function ensureActiveVisible() {
+  const arr = visibleNotes();
+  if (!arr.some(n => n.id === activeId)) activeId = arr[0] ? arr[0].id : null;
+}
+// 当前层级仅在栈式布局生效；桌面三栏保留同一选择和正文。
+const notepadNarrow = window.matchMedia('(max-width: 820px), (max-height: 520px) and (pointer: coarse)');
+let notepadNavigated = false;
+let notepadLoaded = false;
+function mGo(level, remember = true) {
+  const app = document.querySelector('.app');
+  if (app) app.dataset.m = level;
+  if (remember) notepadNavigated = true;
+}
+function isStackedLayout() {
+  return document.documentElement.dataset.layout === 'compact' || notepadNarrow.matches;
+}
+function syncNotepadLayout() {
+  document.querySelector('.app').classList.toggle('stack-layout', isStackedLayout());
+  applySideCollapsed();
+}
+notepadNarrow.addEventListener('change', syncNotepadLayout);
+
+function switchView(kind, folder) {
+  view = { kind, folder: folder || null };
+  mGo('list');                 // 挑完文件夹就该看这个文件夹里的东西
+  ensureActiveVisible();
+  save();
+  renderAll();
+}
+function newNote() {
+  setTimeout(() => mGo('note'), 0);   // 新建完就该在写,不是回列表里再找一遍
+  if (view.kind === 'trash') view = { kind: 'all', folder: null };
+  const folder = view.kind === 'folder' ? view.folder : DEFAULT_FOLDER;
+  const n = { id: uid(), content: '', updated: new Date().toISOString(), folder };
+  notes.push(n);
+  activeId = n.id;
+  query = ''; el('searchInput').value = '';
+  save();
+  renderAll();
+  el('editor').focus();
+}
+function deleteActive() {
+  const n = activeNote();
+  if (!n) return;
+  if (view.kind === 'trash') {
+    // 最近删除里再删 = 彻底删除
+    if (!confirm('彻底删除「' + titleOf(n) + '」？此操作不可恢复。')) return;
+    notes = notes.filter(x => x.id !== n.id);
+    if (!notes.length) _userEmptied = true;
+  } else {
+    n.deleted = true;
+    n.deletedAt = new Date().toISOString();
+  }
+  ensureActiveVisible();
+  save();
+  renderAll();
+}
+function restoreActive() {
+  const n = activeNote();
+  if (!n || !n.deleted) return;
+  delete n.deleted; delete n.deletedAt;
+  ensureActiveVisible();
+  save();
+  renderAll();
+}
+function emptyTrash() {
+  const cnt = notes.filter(n => n.deleted).length;
+  if (!cnt) return;
+  if (!confirm('清空「最近删除」中的 ' + cnt + ' 条备忘录？此操作不可恢复。')) return;
+  notes = notes.filter(n => !n.deleted);
+  if (!notes.length) _userEmptied = true;
+  ensureActiveVisible();
+  save();
+  renderAll();
+}
+function newFolder() {
+  const name = (prompt('新建文件夹名称') || '').trim();
+  if (!name) return;
+  if (name === DEFAULT_FOLDER || name === '全部备忘录' || name === '最近删除' || folders.includes(name)) {
+    alert('已存在同名文件夹'); return;
+  }
+  folders.push(name);
+  save();
+  switchView('folder', name);
+}
+
+// ---- 左栏收起 / 展开 ----
+function applySideCollapsed() {
+  const collapsed = sideCollapsed && !isStackedLayout();
+  document.querySelector('.app').classList.toggle('side-collapsed', collapsed);
+  el('btnSideExpand').hidden = !collapsed;
+}
+function toggleSidebar() {
+  if (isStackedLayout()) {
+    mGo(document.querySelector('.app').dataset.m === 'folders' ? 'list' : 'folders');
+    return;
+  }
+  sideCollapsed = !sideCollapsed;
+  try { localStorage.setItem(SIDE_KEY, sideCollapsed ? '1' : '0'); } catch {}
+  applySideCollapsed();
+}
+
+// ---- 可拖分栏线（mousedown 记起点 → mousemove 改宽 → mouseup 落盘） ----
+function clampW(cfg, w) { return Math.min(cfg.max, Math.max(cfg.min, Math.round(w))); }
+function currentW(cfg) {
+  const raw = getComputedStyle(document.querySelector('.app')).getPropertyValue(cfg.cssVar);
+  const w = parseFloat(raw);
+  return isNaN(w) ? cfg.def : w;
+}
+function applyStoredWidths() {
+  const app = document.querySelector('.app');
+  for (const cfg of [SIDE_W, LIST_W]) {
+    const stored = parseFloat(localStorage.getItem(cfg.key));
+    if (!isNaN(stored)) app.style.setProperty(cfg.cssVar, clampW(cfg, stored) + 'px');
+  }
+}
+function wireDivider(divId, cfg) {
+  const app = document.querySelector('.app');
+  el(divId).addEventListener('mousedown', e => {
+    e.preventDefault();
+    const startX = e.clientX, startW = currentW(cfg);
+    document.body.classList.add('col-dragging');
+    el(divId).classList.add('dragging');
+    const move = ev => {
+      app.style.setProperty(cfg.cssVar, clampW(cfg, startW + ev.clientX - startX) + 'px');
+    };
+    const up = () => {
+      document.removeEventListener('mousemove', move);
+      document.removeEventListener('mouseup', up);
+      document.body.classList.remove('col-dragging');
+      el(divId).classList.remove('dragging');
+      try { localStorage.setItem(cfg.key, String(currentW(cfg))); } catch {}
+    };
+    document.addEventListener('mousemove', move);
+    document.addEventListener('mouseup', up);
+  });
+}
+
+// ---- 事件绑定 ----
+el('sideScroll').addEventListener('click', e => {
+  const row = e.target.closest('.side-row');
+  if (!row) return;
+  switchView(row.dataset.view, row.dataset.folder || null);
+});
+el('noteList').addEventListener('click', e => {
+  const item = e.target.closest('.note-item');
+  if (!item) return;
+  if (item.dataset.id !== activeId) {
+    activeId = item.dataset.id;
+    save();
+    renderList();
+  }
+  renderEditor();
+  mGo('note');                 // 点开一条就进正文
+});
+el('mBackFolders').addEventListener('click', () => mGo('folders'));
+el('mBackList').addEventListener('click', () => mGo('list'));
+mGo('list', false);            // 默认列表；紧凑宿主在数据加载后优先展示当前正文
+// 右侧紧凑宿主与手机共用栈式布局，但入口语义不同：从“最近应用”打开时应直接看
+// 当前正文，列表收进返回层；主区展开后不重置用户刚才所在的层级。
+let notepadLayout = '';
+function applyNotepadLayout(mode) {
+  const next = mode === 'compact' ? 'compact' : 'main';
+  if (next === notepadLayout) return;
+  notepadLayout = next;
+  document.documentElement.dataset.layout = next;
+  syncNotepadLayout();
+  if (next === 'compact' && notepadLoaded && !notepadNavigated)
+    mGo(activeNote() ? 'note' : 'list', false);
+}
+window.addEventListener('message', e => {
+  if (e.source !== parent || e.origin !== location.origin || !e.data || e.data.type !== 'desktron-layout') return;
+  applyNotepadLayout(e.data.mode);
+});
+applyNotepadLayout(document.documentElement.dataset.layout);
+el('btnNew').addEventListener('click', newNote);
+el('btnDelete').addEventListener('click', deleteActive);
+el('btnRestore').addEventListener('click', restoreActive);
+el('btnEmptyTrash').addEventListener('click', emptyTrash);
+el('btnNewFolder').addEventListener('click', newFolder);
+el('btnSideCollapse').addEventListener('click', toggleSidebar);
+el('btnSideExpand').addEventListener('click', toggleSidebar);
+el('searchInput').addEventListener('input', e => {
+  query = e.target.value.trim();
+  ensureActiveVisible();
+  renderList();
+  renderEditor();
+});
+
+el('editor').addEventListener('click', (ev) => {   // 链接点击走系统侧打开(委托:粘贴新建的 <a> 同样生效)
+  const a = ev.target.closest && ev.target.closest('a.note-link');
+  if (!a) return;
+  ev.preventDefault(); ev.stopPropagation();
+  fetch('/workbench/open-external', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ url: a.dataset.url || a.getAttribute('href') }) }).catch(() => {});
+});
+
+el('editor').addEventListener('paste', (ev) => {   // 贴单条 URL:落普通超链接;其余走默认粘贴
+  const txt = (ev.clipboardData && ev.clipboardData.getData('text/plain') || '').trim();
+  if (!/^https?:\/\/\S+$/.test(txt)) return;
+  ev.preventDefault();
+  const a = document.createElement('a');
+  a.className = 'note-link'; a.textContent = txt; a.href = txt; a.dataset.url = txt; a.contentEditable = 'false';
+  document.execCommand('insertHTML', false, a.outerHTML + '&nbsp;');
+  el('editor').dispatchEvent(new Event('input'));
+});
+
+let saveTimer = null;
+el('editor').addEventListener('input', () => {
+  const n = activeNote();
+  if (!n || n.deleted) return;
+  n.content = getEditorText();
+  n.updated = new Date().toISOString();
+  el('editorDate').textContent = fmtEditorDate(n.updated);
+  if (saveTimer) clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => { save(); renderSidebar(); renderList(); }, 400);
+});
+
+// ---- init ----
+function applyHash() {
+  const m = (location.hash || '').match(/#note=([\w-]+)/);
+  if (!m) return false;
+  const n = notes.find(x => x.id === m[1] && !x.deleted);
+  if (!n) return false;
+  activeId = n.id;
+  view = { kind: 'folder', folder: folderOf(n) };
+  query = ''; const si = el('searchInput'); if (si) si.value = '';
+  mGo('note');
+  return true;
+}
+(async () => {
+  await load();
+  if (!applyHash()) ensureActiveVisible();
+  notepadLoaded = true;
+  if (notepadLayout === 'compact' && !notepadNavigated)
+    mGo(activeNote() ? 'note' : 'list', false);
+  syncNotepadLayout();
+  applyStoredWidths();
+  wireDivider('divSide', SIDE_W);
+  wireDivider('divList', LIST_W);
+  renderAll();
+})();
+window.addEventListener('hashchange', () => { if (applyHash()) renderAll(); });
+window.addEventListener('focus', () => {   // 别处(工作流页/agent)动过文件:无待写且不在编辑时回读
+  if (_pushT || document.activeElement === el('editor')) return;
+  load().then(() => { ensureActiveVisible(); renderAll(); });
+});
+</script>
+</body></html>

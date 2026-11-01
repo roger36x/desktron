@@ -1,0 +1,270 @@
+#!/usr/bin/env python3
+"""Desk App Control 的 MCP stdio transport。
+
+只转发到本机 Runtime；宿主令牌不进入此进程。Agent 因而只能认领用户已显式委托的
+应用，写操作的审批、超时、幂等与回执仍由 Runtime 强制。
+"""
+import json
+import http.client
+import os
+import socket
+import sys
+import time
+import urllib.error
+import urllib.parse
+import urllib.request
+
+
+PROTOCOL = "2025-06-18"
+SESSION_ID = os.environ.get("DESKTRON_SESSION_ID", "")
+SESSION_CAPABILITY = os.environ.get("DESKTRON_APP_CONTROL_SESSION_CAPABILITY", "")
+
+# 每次工具调用留一行本地日志。
+#
+# 2026-09-02:codex 报「App Control 服务 5 秒超时」,而同一批工具直接经 stdio 调只要
+# 几十毫秒。缺的是「请求到底有没有到达这里」这一个事实——到了就说明慢在返回路径,
+# 没到就说明卡在 codex 的 MCP 客户端/code-mode 那一跳。两种结论的修法完全不同,
+# 靠外部观察分不开。写文件不走 HTTP:真出问题时网络那条路本身就是嫌疑对象。
+LOG_PATH = os.path.join(os.path.expanduser("~/.local/share/desktron/data/app-control"),
+                        "mcp.log")
+
+
+def _log(line):
+    try:
+        os.makedirs(os.path.dirname(LOG_PATH), exist_ok=True)
+        with open(LOG_PATH, "a", encoding="utf-8") as f:
+            f.write("%s pid=%d %s\n" % (time.strftime("%m-%d %H:%M:%S"), os.getpid(), line))
+    except Exception:
+        pass
+
+
+def endpoint():
+    value = os.environ.get("DESKTRON_UI_URL", "").rstrip("/")
+    if value:
+        return value
+    # 7765 是 UI/契约端口(ui_server 的第一个端口参数);7766 是终端 WebSocket 那一路,
+    # 打过去只会得到一个 404 页。Desk 里跑的回合都带 DESKTRON_UI_PORT,这里只是手工调试的兜底。
+    return "http://127.0.0.1:%s" % os.environ.get("DESKTRON_UI_PORT", "7765")
+
+
+class UnixHTTPConnection(http.client.HTTPConnection):
+    def __init__(self, path, timeout):
+        super().__init__("localhost", timeout=timeout)
+        self.unix_path = path
+
+    def connect(self):
+        self.sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        self.sock.settimeout(self.timeout)
+        self.sock.connect(self.unix_path)
+
+
+def _channel_connection(address, timeout):
+    """POSIX 为 Unix Socket 路径；Windows 为 `tcp:127.0.0.1:<端口>` 的专用回环通道。"""
+    if address.startswith("tcp:"):
+        host, _, port = address[4:].rpartition(":")
+        if host != "127.0.0.1" or not port.isdigit() or not 0 < int(port) < 65536:
+            raise RuntimeError("app_control_unavailable: 本地控制通道地址无效")
+        return http.client.HTTPConnection(host, int(port), timeout=timeout)
+    return UnixHTTPConnection(address, timeout)
+
+
+def _unix_request(path, data, headers, timeout):
+    socket_path = os.environ.get("DESKTRON_APP_CONTROL_SOCKET", "")
+    if not socket_path:
+        raise RuntimeError("app_control_unavailable: Desk 会话未提供本地控制通道")
+    conn = _channel_connection(socket_path, timeout)
+    try:
+        conn.request("POST" if data is not None else "GET", path, body=data, headers=headers)
+        response = conn.getresponse()
+        raw = response.read()
+        try:
+            payload = json.loads(raw or b"{}")
+        except Exception:
+            payload = {}
+        if response.status >= 400:
+            raise RuntimeError(payload.get("error") or "HTTP %d" % response.status)
+        return payload
+    except (OSError, http.client.HTTPException) as exc:
+        raise RuntimeError("app_control_unavailable: %s" % str(exc))
+    finally:
+        conn.close()
+
+
+def request(path, body=None, timeout=10):
+    data = json.dumps(body).encode("utf-8") if body is not None else None
+    headers = {"Content-Type": "application/json"}
+    if SESSION_CAPABILITY:
+        headers["X-Desk-App-Control-Session"] = SESSION_CAPABILITY
+        return _unix_request(path, data, headers, timeout)
+    req = urllib.request.Request(endpoint() + path, data=data,
+                                 headers=headers)
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as response:
+            return json.loads(response.read() or b"{}")
+    except urllib.error.HTTPError as exc:
+        try:
+            payload = json.loads(exc.read() or b"{}")
+        except Exception:
+            payload = {}
+        raise RuntimeError(payload.get("error") or "HTTP %d" % exc.code)
+    except (urllib.error.URLError, TimeoutError, OSError) as exc:
+        raise RuntimeError("app_control_unavailable: %s" % str(exc))
+
+
+TOOLS = [
+    {"name": "apps_list", "description": "列出声明了 agent_control 的 Desk 应用。",
+     "inputSchema": {"type": "object", "additionalProperties": False}},
+    {"name": "browser_status",
+     "description": "只读探测 Desk 内置浏览器控制通道、委托与授权状态；不连接网页。",
+     "inputSchema": {"type": "object", "additionalProperties": False,
+                     "properties": {"app_id": {"type": "string", "default": "browser"}}}},
+    {"name": "browser_open",
+     "description": "自己开一个网页并直接持有它。缺省用隔离标签(不带用户 cookie 与内网 "
+                    "SSO),无需用户点头;with_identity=true 用用户登录态,首次由 Desk 弹确认,"
+                    "批准后该站点记住。",
+     "inputSchema": {"type": "object", "additionalProperties": False, "required": ["url"],
+                     "properties": {"url": {"type": "string"},
+                                    "with_identity": {"type": "boolean", "default": False}}}},
+    {"name": "app_claim", "description": "认领用户已经显式委托给当前 Agent 的应用。",
+     "inputSchema": {"type": "object", "additionalProperties": False,
+                     "properties": {"app_id": {"type": "string", "default": "browser"},
+                                    "resource_id": {"type": "string", "default": ""}}}},
+    {"name": "app_inspect", "description": "读取已委托应用的结构化状态或截图。",
+     "inputSchema": {"type": "object", "additionalProperties": False,
+                     "required": ["lease_id"],
+                     "properties": {"lease_id": {"type": "string"},
+                                    "observation": {"type": "string", "default": "document"},
+                                    "input": {"type": "object", "default": {}},
+                                    "expected_version": {"type": "string", "default": ""},
+                                    "idempotency_key": {"type": "string", "default": ""}}}},
+    {"name": "app_act", "description": "请求 manifest 声明的应用动作；风险动作仍由 Desk 审批。",
+     "inputSchema": {"type": "object", "additionalProperties": False,
+                     "required": ["lease_id", "action", "input"],
+                     "properties": {"lease_id": {"type": "string"},
+                                    "action": {"type": "string"},
+                                    "input": {"type": "object"},
+                                    "expected_version": {"type": "string", "default": ""},
+                                    "idempotency_key": {"type": "string", "default": ""}}}},
+    {"name": "app_operation", "description": "查询 App Control 动作及回执状态。",
+     "inputSchema": {"type": "object", "additionalProperties": False,
+                     "required": ["operation_id"],
+                     "properties": {"operation_id": {"type": "string"},
+                                    "wait_seconds": {"type": "integer", "minimum": 0,
+                                                     "maximum": 60, "default": 0}}}},
+    {"name": "app_yield", "description": "主动归还当前 Agent 持有的应用控制权。",
+     "inputSchema": {"type": "object", "additionalProperties": False,
+                     "required": ["lease_id"],
+                     "properties": {"lease_id": {"type": "string"}}}},
+]
+
+
+def call(name, args):
+    args = args if isinstance(args, dict) else {}
+    if name == "apps_list":
+        return request("/workbench/app-control", timeout=5)
+    if name == "browser_status":
+        query = urllib.parse.urlencode({"session_id": SESSION_ID,
+                                        "app_id": args.get("app_id") or "browser"})
+        return request("/workbench/app-control/probe?" + query, timeout=5)
+    if not SESSION_ID:
+        raise RuntimeError("needs_session: MCP 未获得 Desk 会话身份")
+    if name == "browser_open":
+        return request("/workbench/app-control/open", {
+            "session_id": SESSION_ID, "app_id": "browser", "url": args.get("url") or "",
+            "isolated": not bool(args.get("with_identity"))}, timeout=25)
+    if name == "app_claim":
+        return request("/workbench/app-control/claim", {
+            "session_id": SESSION_ID, "app_id": args.get("app_id") or "browser",
+            "resource_id": args.get("resource_id") or "", "ttl_seconds": 900}, timeout=5)
+    if name == "app_inspect":
+        return request("/workbench/app-control/inspect", {
+            "session_id": SESSION_ID, "lease_id": args.get("lease_id") or "",
+            "observation": args.get("observation") or "document",
+            "input": args.get("input") or {},
+            "expected_version": args.get("expected_version") or "",
+            "idempotency_key": args.get("idempotency_key") or ""}, timeout=5)
+    if name == "app_act":
+        return request("/workbench/app-control/act", {
+            "session_id": SESSION_ID, "lease_id": args.get("lease_id") or "",
+            "action": args.get("action") or "", "input": args.get("input") or {},
+            "expected_version": args.get("expected_version") or "",
+            "idempotency_key": args.get("idempotency_key") or ""}, timeout=5)
+    if name == "app_operation":
+        op_id = urllib.parse.quote(str(args.get("operation_id") or ""), safe="")
+        wait = max(0, min(int(args.get("wait_seconds") or 0), 60))
+        path = "/workbench/app-control/operations/" + op_id
+        query = {"session_id": SESSION_ID}
+        if wait:
+            path += "/wait"
+            query["timeout"] = wait
+        path += "?" + urllib.parse.urlencode(query)
+        return request(path, timeout=wait + 5)
+    if name == "app_yield":
+        return request("/workbench/app-control/yield", {
+            "session_id": SESSION_ID, "lease_id": args.get("lease_id") or ""}, timeout=5)
+    raise RuntimeError("unknown_tool: " + str(name))
+
+
+def result(value, error=False):
+    text = json.dumps(value, ensure_ascii=False, separators=(",", ":"))
+    out = {"content": [{"type": "text", "text": text}], "isError": bool(error)}
+    if not error:
+        out["structuredContent"] = value
+    return out
+
+
+def handle(msg):
+    method = msg.get("method") or ""
+    if method == "initialize":
+        return {"protocolVersion": PROTOCOL, "capabilities": {"tools": {"listChanged": False}},
+                "serverInfo": {"name": "desk-app-control", "version": "1.0.0"}}
+    if method == "ping":
+        return {}
+    if method == "tools/list":
+        return {"tools": TOOLS}
+    if method == "tools/call":
+        p = msg.get("params") or {}
+        name = str(p.get("name") or "")
+        t0 = time.time()
+        _log("调用 %s 开始" % name)
+        try:
+            out = result(call(name, p.get("arguments") or {}))
+            _log("调用 %s 成功 %.2fs" % (name, time.time() - t0))
+            return out
+        except Exception as exc:
+            _log("调用 %s 失败 %.2fs:%s" % (name, time.time() - t0, str(exc)[:160]))
+            return result({"error": str(exc)}, True)
+    raise RuntimeError("method_not_found: " + method)
+
+
+def main():
+    _log("启动 endpoint=%s session=%s" % (endpoint(), SESSION_ID or "(无)"))
+    for line in sys.stdin:
+        try:
+            try:
+                msg = json.loads(line)
+            except ValueError:
+                # 解析不了就记一段原文。客户端若用 Content-Length 分帧(LSP 那套)而不是
+                # 逐行 JSON,这里看到的就是帧头——两种失败在外部完全一样,只能这样分开。
+                _log("收到无法解析的输入:%r" % line[:120])
+                continue
+            if not isinstance(msg, dict):
+                _log("收到非对象消息:%r" % line[:120])
+                continue
+            if "id" not in msg:
+                _log("收到通知 %s" % str(msg.get("method") or "?"))   # 无 id 不需应答
+                continue
+            _log("收到请求 %s" % str(msg.get("method") or "?"))
+            try:
+                response = {"jsonrpc": "2.0", "id": msg["id"], "result": handle(msg)}
+            except Exception as exc:
+                response = {"jsonrpc": "2.0", "id": msg["id"], "error": {
+                    "code": -32601, "message": str(exc)}}
+            sys.stdout.write(json.dumps(response, ensure_ascii=False) + "\n")
+            sys.stdout.flush()
+        except Exception:
+            continue
+
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,63 @@
+# 分发 payload 排除清单(rsync --exclude-from)。sync-home 与 release.sh 共用。
+# 排:版本库、依赖/构建产物、本地缓存、本地凭证/会话态、运行态工作层、分发产出本身。
+# 注:rsync 不读 .gitignore,gitignored 的运行态目录也在工作树里、不排就会被搬进 payload,故在此显式列。
+.git
+node_modules
+desktop/target
+__pycache__
+*.pyc
+.DS_Store
+._*
+sso_session.json
+.claude/settings.local.json
+.claude/worktrees
+/.agents
+/.codex
+.pytest_cache
+/.workbench
+/.playwright-mcp
+/imp
+/.opencode
+.cursor
+dist
+*.tgz
+
+# knowledge/ 仅是存量用户运行态，不进入 payload。
+/knowledge
+
+# 工作流目录与记忆工作层(运行态,git 外;开发态 REPO_ROOT=源码仓时也兜住)
+.memory
+/domains
+
+# 已退役 attention 子系统的本地遗留数据,继续排除以免绝对路径进入发行包
+.attention
+
+# === 开发态材料,不随发行(运行态 bin/lib/frontend/引擎配置 不读)===
+# 前置斜杠锚定顶层,避免误伤同名嵌套目录。
+# 注:rsync --exclude-from 不支持行内注释,模式行必须干净,说明只能整行 #。
+# /docs:设计/历史文档,仅 lib 注释里作"见 docs/..."指针,运行态不 open。
+# /engines /agents /mcp:开发说明与占位 README,运行时不读取。
+# /scripts/dev:dev/release 工具(release.sh/bootstrap.sh/term_smoke.py);bin 三个 dev 子命令据其在否守门。
+# /desktron/tests:lib 单测,纯 dev/CI。
+/docs
+/engines
+/agents
+/mcp
+/scripts/dev
+/desktron/tests
+/al.py
+
+# desktop:只发 Swift 壳源(app-install swift 重建 .app 用)+ icon.icns;
+# Tauri/Rust 脚手架未启用(待上游),逐项排除以保住 native/main.swift 与 icons/icon.icns。
+/desktop/Cargo.toml
+/desktop/build.rs
+/desktop/src
+/desktop/rust-toolchain.toml
+/desktop/tauri.conf.json
+/desktop/capabilities
+/desktop/dist
+/desktop/README.md
+/desktop/icons/icon.png
+# Windows 原生壳(Rust)源码、构建目录与共享页面脚本：发行包内带预编译 Desktron.exe，payload 不需要。
+/desktop/windows
+/desktop/shared

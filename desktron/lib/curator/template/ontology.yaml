@@ -1,0 +1,93 @@
+# 实例本体声明。引擎读本文件决定实体/边/doc_type/校验/freshness,不硬编。
+# 派生后替换为本领域的类型与规则。
+
+name: my-instance
+description: curator 实例。替换为本领域描述。
+
+# 实例级配置:monorepo 多子 KB + 消费方工作层。
+# - sub_kbs:git 内成品的子 KB(id 即顶层目录;归属靠 CODEOWNERS)。每个子 KB 内按
+#   role_layers(global/domain)角色层分,加 graph 分区与 index 导航。新团队加一个目录 + sub_kbs 一行。
+# - work_layer:消费方 git 外工作层(temp/private/shared),gitignore + 准入闸挡,永不上远端。
+# kernel 不含任何子 KB 名 / 领域名。出厂含一个示例子 KB example-kb,替换 / 增删即可。
+instance:
+  sub_kbs: [example-kb]
+  role_layers: [global, domain]
+  sub_kb_graph: graph/entities.yaml
+  sub_kb_index: index.md
+  # local/ 是用户全局工作容器(git 外);private / shared 是其内两级可见性。
+  work_layer:
+    temp:    {dir: temp, gated: false}
+    private: {dir: local/private, containment: true}
+    shared:  {dir: local/shared}
+  index_file: INDEX.md
+  # 变更驱动 freshness 的外部源检测插件(可选):tracks 里 repo:/config:/doc: 由它判是否前进。
+  # note:<id> 由引擎自检,不需插件。命令形如 `<cmd> <ref> <anchor-date>`,退出码 0 = 已前进。
+  # freshness_plugin: my-freshness-check
+  # 蒸馏准入闸的外部源核验插件(可选):蒸馏产物 tracks 里 repo:/config:/doc: 由它判是否兑现。
+  # note:<id> 由引擎自检。命令形如 `<cmd> <ref>`,退出码 0 = 源已解析 / 兑现,非 0 = 拒(输出作拒因)。
+  # check_plugin: my-resolve-check
+
+# kind=fact 笔记可用的 doc_type
+doc_types:
+  - glossary
+  - aliases
+  - landscape
+  - reference
+  - runbook
+
+# 实体型 doc_type:这些 doc_type 的 fact 笔记必须在 graph 有对应实体(某实体 profile_doc 指向它)。
+# 提交期闸硬挡新增,lint 棘轮 WARN 兜存量。空 / 不声明 = 不强制,向后兼容。按需开启,如:
+# entity_backed_doc_types: [landscape]
+
+# kind=fact 笔记按 doc_type 的新鲜度阈值(月)
+freshness:
+  glossary:   {fresh: 12, aging: 24}
+  reference:  {fresh: 6,  aging: 12}
+  landscape:  {fresh: 6,  aging: 12}
+  runbook:    {fresh: 3,  aging: 6}
+  aliases:    {fresh: 12, aging: 24}
+
+# 置信度档,全部由 source 的独立来源数自动推导:
+# reported(0 个)< documented(1 个)< corroborated(≥2 个)。实例可扩档(中段细分)对齐上游团队 KB。
+confidence_levels: [reported, documented, corroborated]
+
+# 来源权重(authority)打分常量。引擎内置默认,下面覆盖即可;全注释则用默认。
+# 公式:score = 结构先验 × 新鲜度 × (w_base + w_cite×引用广度 + w_corrob×交叉印证)
+# authority:
+#   half_life_months: 12                     # 新鲜度半衰期(月)
+#   cite_ref: 5                              # 引用广度饱和参考(links in-degree)
+#   w_base: 0.5
+#   w_cite: 0.3
+#   w_corrob: 0.2
+#   band_prior: {inside: 1.0, outside: 0.6}  # 按 band git 归属的位置先验
+
+# 年轻代 GC(curator gc)参数。引擎内置默认,下面覆盖即可;全注释则用默认。
+# 自动晋升只到 git 外桶(promote_to),绝不自动跨 git 线。
+# gc:
+#   promote_to: shared           # 自动晋升落哪个桶(默认首个非 containment 的 git 外桶)
+#   aging: 90d                   # tenuring:草稿存活到此年龄且仍可达 → 晋升
+#   pretenure_quality: 0.7       # pretenure:位置无关质量分 ≥ 此值 → 直接晋升
+#   temp_budget: 200             # temp 文件数预算,涨满强制 triage
+#   evict:
+#     stale: 180d                # 淘汰判据:年龄超过
+#     min_quality: 0.3           # 低质阈值
+#     min_access: 1              # 可达判据:访问 < 此 且 in-degree 0 算不可达
+
+# graph/ 的 sot 层:实体类型 + 字段 + 校验。
+# requires = 该类型实体必须有的字段(缺 → 校验 WARN)。
+entities:
+  thing:
+    fields: [profile_doc, status]
+    requires: [profile_doc]
+  actor:
+    fields: [profile_doc]
+    requires: []
+
+# 边类型:类型化有向引用。from/to 限定端点实体类型。边指向不存在实体 → 校验硬失败。
+edges:
+  links_to:
+    from: actor
+    to: thing
+  depends_on:
+    from: thing
+    to: thing

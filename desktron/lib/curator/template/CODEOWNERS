@@ -1,0 +1,7 @@
+# 每个子 KB 目录归属各自团队(目录级 CODEOWNERS)。
+# 治理(ontology/rules/graph schema)在根上一份,改它需引擎/平台 owner 评审。
+# 新团队:加一个子 KB 目录 + 在这里加一条归属。
+
+/ontology.yaml      @kb-platform
+/rules.yaml         @kb-platform
+/example-kb/        @your-team

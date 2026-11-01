@@ -1,0 +1,3 @@
+# Public-tree review uses exact byte hashes. Keep text bytes identical across
+# fresh Windows/macOS/Linux checkouts; preserve binary files and UTF-8 BOMs.
+* text=auto eol=lf

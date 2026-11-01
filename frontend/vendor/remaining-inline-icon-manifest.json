@@ -1,0 +1,307 @@
+{
+  "schema": 1,
+  "version": "reviewed-remaining25-straight-latitudes-7.8",
+  "status": "applied-to-source",
+  "count": 25,
+  "unique_geometry": 21,
+  "canvas": 32,
+  "license": "Apache-2.0 subject to project rightsholder confirmation",
+  "scope": "5 browser symbols, 14 chat symbols and 6 arrangement symbols; separate from original-inline-icon-manifest.json (41 active entries after Timeline retirement)",
+  "adaptations": [
+    "Preserve original root display dimensions including unspecified sizes",
+    "Add accessibility metadata and pin approved paint attributes on a child group; approved child geometry unchanged"
+  ],
+  "icons": [
+    {
+      "symbol": "_BR_ICON_BACK",
+      "file": "frontend/app-browser.js",
+      "approved_svg": "frontend/icons/reviewed-remaining/_BR_ICON_BACK.svg",
+      "approved_draft_sha256": "d60cc7c3a37f46e4fb2b128d7fa7c7c2ddf0c3e15ee0f9d2370ffac404edb9f6",
+      "svg_sha256": "43da5c64beb04f293b76cb6eea3ce300d5c4426ffe62239c657ae6d1d54a021d",
+      "display_attributes": {
+        "width": "15",
+        "height": "15"
+      },
+      "label": "后退"
+    },
+    {
+      "symbol": "_BR_ICON_FWD",
+      "file": "frontend/app-browser.js",
+      "approved_svg": "frontend/icons/reviewed-remaining/_BR_ICON_FWD.svg",
+      "approved_draft_sha256": "23f148ddb7a1e8935ece4f276a1c219fecc50129481bc2699799700f7d153977",
+      "svg_sha256": "e1d744d931eac4e346f976e94fbdada514fbfbad6c29c4831c5280a5c16b2066",
+      "display_attributes": {
+        "width": "15",
+        "height": "15"
+      },
+      "label": "前进"
+    },
+    {
+      "symbol": "_BR_ICON_RELOAD",
+      "file": "frontend/app-browser.js",
+      "additional_consumers": [
+        {
+          "file": "frontend/style.css",
+          "selector": ".hs-context-status-action[data-kind=engine-update] .hs-context-status-action-icon",
+          "adaptation": "Existing approved SVG used unchanged as a 15px currentColor alpha mask; rotate only while the update request is pending, respecting reduced motion."
+        }
+      ],
+      "approved_svg": "frontend/icons/reviewed-remaining/_BR_ICON_RELOAD.svg",
+      "approved_draft_sha256": "9771a559fe2e187600ad7ffb2801ef6b6fdbdd2ab8dce815f1ea9a68cf8301a6",
+      "svg_sha256": "bb6e4b5a27ca79b5df9f514f6c4a5e07ba52eee969f1f5ad582f32c23baeb462",
+      "display_attributes": {
+        "width": "15",
+        "height": "15"
+      },
+      "label": "刷新"
+    },
+    {
+      "symbol": "_BR_ICON_PLUS",
+      "file": "frontend/app-browser.js",
+      "approved_svg": "frontend/icons/reviewed-remaining/_BR_ICON_PLUS.svg",
+      "approved_draft_sha256": "15d28998577166a777c74663a09d9061ca68fcc12c38061aa79dee270b7a23b7",
+      "svg_sha256": "acd5a299eef674e8af311d48daab0d670156429039fa91b8f3b0cba08b743ec1",
+      "display_attributes": {
+        "width": "13",
+        "height": "13"
+      },
+      "label": "新建"
+    },
+    {
+      "symbol": "_BR_ICON_GLOBE",
+      "file": "frontend/app-browser.js",
+      "approved_svg": "frontend/icons/reviewed-remaining/_BR_ICON_GLOBE.svg",
+      "approved_draft_sha256": "8807c8741306b765f6e4fbe8383cde236d339586e0917be271bab328a4497730",
+      "svg_sha256": "32b11075b9b06ba86836dbf47fc7a23dc29c5fda33da45e03336fbb05240946a",
+      "display_attributes": {
+        "width": "38",
+        "height": "38"
+      },
+      "label": "地球"
+    },
+    {
+      "symbol": "HS_ICONS.qprev",
+      "file": "frontend/app-chat-tools.js",
+      "approved_svg": "frontend/icons/reviewed-remaining/HS_ICONS-qprev.svg",
+      "approved_draft_sha256": "44f6b3e0381bed6b15974a52ae50410c9ba750ab6065fc48be4a485cac68a3e5",
+      "svg_sha256": "2bf03cf03651adf7609f63a5c2e0b3da6caad79cacf0b2b2ce9c6361e0876176",
+      "display_attributes": {
+        "width": "15",
+        "height": "15"
+      },
+      "label": "上一项"
+    },
+    {
+      "symbol": "HS_ICONS.qnext",
+      "file": "frontend/app-chat-tools.js",
+      "approved_svg": "frontend/icons/reviewed-remaining/HS_ICONS-qnext.svg",
+      "approved_draft_sha256": "ca77941632abd3b8c0410599753a6bb4261fb071bb60da9864ea27f42e274a63",
+      "svg_sha256": "2efa793799a53977138c3b6302002d88ba8e27c8dd449271763fa02ada9a6f20",
+      "display_attributes": {
+        "width": "15",
+        "height": "15"
+      },
+      "label": "下一项"
+    },
+    {
+      "symbol": "HS_ICONS.qclose",
+      "file": "frontend/app-chat-tools.js",
+      "approved_svg": "frontend/icons/reviewed-remaining/HS_ICONS-qclose.svg",
+      "approved_draft_sha256": "0def9d1e28ca5e62231e60899b89cb9ff4dd2942664624df3f26819aa5749aa1",
+      "svg_sha256": "4edf4cdeb960a6e270af51e430441d78c013f4e64d07d467c93005bb8b9a6f3b",
+      "display_attributes": {
+        "width": "15",
+        "height": "15"
+      },
+      "label": "关闭"
+    },
+    {
+      "symbol": "HS_ICONS.qpen",
+      "file": "frontend/app-chat-tools.js",
+      "approved_svg": "frontend/icons/reviewed-remaining/HS_ICONS-qpen.svg",
+      "approved_draft_sha256": "c4ca0b737be2b78c3e32889f66161ebc23bf9d2724ab23732812747ae4cf0c20",
+      "svg_sha256": "cb176ba7501d111aa8a4637b3cddcad2b681fbca901e3048f46c45b214e9d8cb",
+      "display_attributes": {
+        "width": "13",
+        "height": "13"
+      },
+      "label": "编辑铅笔"
+    },
+    {
+      "symbol": "HS_ICONS.qchat",
+      "file": "frontend/app-chat-tools.js",
+      "approved_svg": "frontend/icons/reviewed-remaining/HS_ICONS-qchat.svg",
+      "approved_draft_sha256": "f7e18cc15036b1b74ac8dc6d7f40960727040ac9ae991219b68dbaf68b789239",
+      "svg_sha256": "af72ac2fb04f56c3ee41c63a817ad4c255ceb2a778ea6618a6bd6f61db275b07",
+      "display_attributes": {
+        "width": "13.5",
+        "height": "13.5"
+      },
+      "label": "对话"
+    },
+    {
+      "symbol": "HS_ICONS.check",
+      "file": "frontend/app-chat-tools.js",
+      "approved_svg": "frontend/icons/reviewed-remaining/HS_ICONS-check.svg",
+      "approved_draft_sha256": "0e6f8bd25e0d3cf6aecb89ac846b757658ebe29c946cf418a4cf8cfb9bd35617",
+      "svg_sha256": "5a13db51a967510acc37d95380bae3d6b3748277bacb8fdf0a11b668f75d59ac",
+      "display_attributes": {
+        "width": "14",
+        "height": "14"
+      },
+      "label": "勾选"
+    },
+    {
+      "symbol": "HS_ICONS.clip",
+      "file": "frontend/app-chat-tools.js",
+      "approved_svg": "frontend/icons/reviewed-remaining/HS_ICONS-clip.svg",
+      "approved_draft_sha256": "ccf50fb6ed2e96de61f5cd264121a9d65f98af4d814c52da8bf299121aa9adcd",
+      "svg_sha256": "172159d9f13203a1fe9b358fe1d345546f433dbc311f5af03a9614cde0dd6ec6",
+      "display_attributes": {
+        "width": "16",
+        "height": "16"
+      },
+      "label": "回形针"
+    },
+    {
+      "symbol": "HS_ICONS.rewind",
+      "file": "frontend/app-chat-tools.js",
+      "approved_svg": "frontend/icons/reviewed-remaining/HS_ICONS-rewind.svg",
+      "approved_draft_sha256": "9bbc0254ed152e00adf9f2c0c152054b18e33082f6a52eb154191529eb69c2f3",
+      "svg_sha256": "6f88c5a0a5e5219695ffbd83ba7e5dd3b64ac18c0a4e6f21a83f5d9f60301405",
+      "display_attributes": {
+        "width": "14.5",
+        "height": "14.5"
+      },
+      "label": "回退／双左角标"
+    },
+    {
+      "symbol": "HS_ICONS.chev",
+      "file": "frontend/app-chat-tools.js",
+      "approved_svg": "frontend/icons/reviewed-remaining/HS_ICONS-chev.svg",
+      "approved_draft_sha256": "ca77941632abd3b8c0410599753a6bb4261fb071bb60da9864ea27f42e274a63",
+      "svg_sha256": "9d96cec31453d3a88c9e4365f5e9f699061bc11d43e2148fb7ff1279d29af438",
+      "display_attributes": {
+        "width": "14",
+        "height": "14"
+      },
+      "label": "右角标"
+    },
+    {
+      "symbol": "HS_ICONS.lock",
+      "file": "frontend/app-chat-tools.js",
+      "approved_svg": "frontend/icons/reviewed-remaining/HS_ICONS-lock.svg",
+      "approved_draft_sha256": "f83530a669c4c38692ad56657713cb4e446d2f3772ffd8b2a34f8b1a07e2a589",
+      "svg_sha256": "d8080e8be6320afee072ef53dfc2888e330893092329097e4ab1f75ee7b3baa3",
+      "display_attributes": {
+        "width": "20",
+        "height": "20"
+      },
+      "label": "锁定"
+    },
+    {
+      "symbol": "HS_ICONS.unlock",
+      "file": "frontend/app-chat-tools.js",
+      "approved_svg": "frontend/icons/reviewed-remaining/HS_ICONS-unlock.svg",
+      "approved_draft_sha256": "c8534c689bb225c11079b43ac29a6837936e07bcbd16fa4d65f2bca4a73b8d57",
+      "svg_sha256": "b625e993351fe737e515cdf7c41ce5d55ded27ad2646f4cf1b639c4abd70a509",
+      "display_attributes": {
+        "width": "20",
+        "height": "20"
+      },
+      "label": "开锁"
+    },
+    {
+      "symbol": "HS_ICONS.copy",
+      "file": "frontend/app-chat-tools.js",
+      "approved_svg": "frontend/icons/reviewed-remaining/HS_ICONS-copy.svg",
+      "approved_draft_sha256": "1b8f0eabad1c0922fefb0052833f226f6bc67f05b25e95bd5c7a4ab6c9d6cbb5",
+      "svg_sha256": "f741df4eea20a6e2feeee6c9fed2daaedf1c42afa6417e27cd4b6f05b50ff201",
+      "display_attributes": {
+        "width": "14.1",
+        "height": "14.1"
+      },
+      "label": "复制／双页"
+    },
+    {
+      "symbol": "HS_ICONS.down",
+      "file": "frontend/app-chat-tools.js",
+      "approved_svg": "frontend/icons/reviewed-remaining/HS_ICONS-down.svg",
+      "approved_draft_sha256": "18f6851447f1c3ceb36a6259a9ce25c96d7343e0ac8fb4b164b25db58b7af7e7",
+      "svg_sha256": "b36797bf4d6b90ef6ffe2e7841cf64978fc71118f6481b7b02d6a0aa03825a71",
+      "display_attributes": {
+        "width": "17",
+        "height": "17"
+      },
+      "label": "向下箭头"
+    },
+    {
+      "symbol": "HS_ICONS.chev2",
+      "file": "frontend/app-chat-tools.js",
+      "approved_svg": "frontend/icons/reviewed-remaining/HS_ICONS-chev2.svg",
+      "approved_draft_sha256": "d0b3ba8b1ee123a240e508c0a900900c28402547d92c43e47bb4081c1bf7f184",
+      "svg_sha256": "dab80f846f1ee65902637174ce4a3bccb08ab982d8222ba977d4437050f812c8",
+      "display_attributes": {},
+      "label": "下角标"
+    },
+    {
+      "symbol": "_ARR_ICONS.down",
+      "file": "frontend/app-panel-arrangements.js",
+      "approved_svg": "frontend/icons/reviewed-remaining/_ARR_ICONS-down.svg",
+      "approved_draft_sha256": "d0b3ba8b1ee123a240e508c0a900900c28402547d92c43e47bb4081c1bf7f184",
+      "svg_sha256": "ba0e4d9f190fbd02cfbe392557157c7f42d1efc15733944b24dc7950e607ebf3",
+      "display_attributes": {
+        "width": "12",
+        "height": "12"
+      },
+      "label": "下角标"
+    },
+    {
+      "symbol": "_ARR_ICONS.search",
+      "file": "frontend/app-panel-arrangements.js",
+      "approved_svg": "frontend/icons/reviewed-remaining/_ARR_ICONS-search.svg",
+      "approved_draft_sha256": "6ca280b2bbefa85bdb2e550cd1d1704b62f616510d0acf5bb131b3f915a727d4",
+      "svg_sha256": "76c4950cd90f16f4e41cf792594dd7f2b40242d7e3aad265094a82c65c0415a2",
+      "display_attributes": {},
+      "label": "搜索"
+    },
+    {
+      "symbol": "_ARR_ICONS.calendar",
+      "file": "frontend/app-panel-arrangements.js",
+      "approved_svg": "frontend/icons/reviewed-remaining/_ARR_ICONS-calendar.svg",
+      "approved_draft_sha256": "97751ffcc502a7910e55af38a43c301db0d16318d045742dc34ba64a22372744",
+      "svg_sha256": "f63c59b703b72423bc57d7036998092a8c3dbb6dc365416bec7a8921ea44b86c",
+      "display_attributes": {},
+      "label": "日历"
+    },
+    {
+      "symbol": "_ARR_ICONS.chev",
+      "file": "frontend/app-panel-arrangements.js",
+      "approved_svg": "frontend/icons/reviewed-remaining/_ARR_ICONS-chev.svg",
+      "approved_draft_sha256": "ca77941632abd3b8c0410599753a6bb4261fb071bb60da9864ea27f42e274a63",
+      "svg_sha256": "89749068421011602f295b1673d65d6f654fa3b82ac8ebfe70d3460bed5beecc",
+      "display_attributes": {},
+      "label": "右角标"
+    },
+    {
+      "symbol": "_ARR_ICONS.close",
+      "file": "frontend/app-panel-arrangements.js",
+      "approved_svg": "frontend/icons/reviewed-remaining/_ARR_ICONS-close.svg",
+      "approved_draft_sha256": "0def9d1e28ca5e62231e60899b89cb9ff4dd2942664624df3f26819aa5749aa1",
+      "svg_sha256": "e7f92ac2da7ac624d82137e4f53a2032a401b5d619a55fd4c4bd792e2f126f50",
+      "display_attributes": {},
+      "label": "关闭"
+    },
+    {
+      "symbol": "_ARR_ICONS.who",
+      "file": "frontend/app-panel-arrangements.js",
+      "approved_svg": "frontend/icons/reviewed-remaining/_ARR_ICONS-who.svg",
+      "approved_draft_sha256": "440c37f776f1ff1411e85f3222a0b1674e7f51b3094f6e12a6247a92d7c62989",
+      "svg_sha256": "6def69137a0c5b2c7e01b91c8e42ccbb9332b71ecd377c966356ca534349fe6a",
+      "display_attributes": {},
+      "label": "人物"
+    }
+  ],
+  "preserved_fork_expression_sha256": "c67e9023972b3dbacf0c025a43c6b7e7ed3f182779b44596c34d717b97ecd528",
+  "provenance": "Independently constructed from semantic primitives; no external library or transformed legacy SVG geometry. User approved the complete set and final 7.8-unit straight latitude spacing."
+}

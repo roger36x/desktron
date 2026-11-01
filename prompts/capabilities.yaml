@@ -1,0 +1,63 @@
+version: 2
+kind: desktron-prompt-capabilities
+
+# Engines × runtimes are compiler output, not hand-maintained rows.
+defaults:
+  carriers: [user_prefix, native_context]
+  native_sources:
+    default_prompt: true
+    context_files: false
+    repo_skills: false
+    global_skills: false
+  refresh:
+    system: process
+    turn: true
+    engine_entry: true
+  compression:
+    preserves_system: true
+    preserves_turn_context: false
+    requires_reinject: true
+
+engines:
+  claude:
+    carriers:
+      add: [system_append]
+    native_sources:
+      context_files: true
+      repo_skills: true
+      global_skills: true
+    refresh:
+      turn: false
+
+  codex:
+    carriers:
+      add: [developer_instructions]
+
+  pi:
+    carriers:
+      add: [system_append]
+    refresh:
+      turn: false
+
+runtimes:
+  native: {}
+  shepherd: {}
+
+# Cross-axis exceptions only. Each block deep-merges onto defaults + engine + runtime.
+overrides:
+  claude-shepherd:
+    carriers:
+      remove: [system_append]
+      add: [system_snapshot, user_hidden_context]
+    native_sources:
+      default_prompt: false
+      global_skills: false
+    refresh:
+      system: binding
+      turn: true
+    notes: unified-v1 将规则及低信任项目数据放入当前系统快照，变化时换代；旧 private Binding 保留带身份校验的隐藏块，不改写历史快照。
+
+  codex-shepherd:
+    carriers:
+      add: [application_context]
+    notes: developerInstructions 每轮包含当前 Desktron 约束和低信任项目数据；exec/resume 使用同一 developer_instructions 配置载体。

@@ -1,0 +1,6 @@
+# sot 层:类型化实体 + 类型化有向边。类型在 ontology.yaml 声明,本文件只放实例数据。
+# profile_doc 单向 backref 指向叙事笔记;叙事不反指 sot。
+
+entities: []
+
+edges: []

@@ -1,0 +1,17 @@
+[package]
+name = "desktron-desktop"
+version = "0.0.1"
+description = "desktron 桌面壳(薄 webview,托管本地 Desk 服务)"
+edition = "2021"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = ["devtools"] }
+tauri-plugin-shell = "2"
+
+[profile.release]
+opt-level = "s"
+lto = true
+strip = true

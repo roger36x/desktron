@@ -1,0 +1,6 @@
+# desktron 工作层(运行态,不入 git)
+.memory/
+knowledge/
+domains/*/memory
+domains/*/imports
+domains/*/temp

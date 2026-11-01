@@ -1,0 +1,15 @@
+{
+  "schema": 1,
+  "match_method": "exact XML child tags and attributes; root styling excluded",
+  "note": "The other 17 previously matched symbols were replaced by reviewed project-created drawings; see original-inline-icon-manifest.json. The legacy zap key is retained for dynamically configured workflows.",
+  "matched": [
+    {
+      "file": "frontend/app-core.js",
+      "symbol": "ICONS.zap",
+      "upstream": "feather-icons@4.29.2/zap",
+      "license": "MIT",
+      "geometry_sha256": "a24061d2d43a1c06a047783ce39e481409a4e5653a5edd6f1b961d7c8e60e735",
+      "changes": "root SVG sizing/stroke attributes may differ"
+    }
+  ]
+}

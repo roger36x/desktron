@@ -1,0 +1,42 @@
+{
+  "version": "supplemental-original-v4",
+  "license": "Apache-2.0",
+  "icons": [
+    {
+      "name": "browser",
+      "svg": "icons/app-browser-original-5d5d9b828321.svg",
+      "svg_sha256": "868f30a14676b9e201fdcdc8e34392b6ebf357db87fe1105967382a64a6f04a8",
+      "png": "icons/app-browser-original-5d5d9b828321.png",
+      "png_sha256": "5d5d9b8283214245ced2cf8aa5a26e3fbf46a630b35613295cd6512459da08ed"
+    },
+    {
+      "name": "move",
+      "svg": "icons/menu-move.svg",
+      "svg_sha256": "8f39f63b987a452300e0ec6e5169746297cd202663f1f684562b3e4d56e3a3d5",
+      "png": "icons/menu-move.png",
+      "png_sha256": "a68617b0085836305a22341b4241ac73a0faae725d7d6c9bdf6ca7cd297aa34e"
+    },
+    {
+      "name": "bell",
+      "svg": "icons/bell.svg",
+      "svg_sha256": "a16d1d8191e2895b248356ee921f04d1f4e8aea2f883929750fd528acd0d34aa",
+      "png": "icons/bell.png",
+      "png_sha256": "04fd8a9e27d48deacdf691fe6d81f887e2ed3d0f7088eb0023287f05ce53092f",
+      "revision": "solid-body; original outer contour, size and alignment unchanged"
+    },
+    {
+      "name": "shepherd",
+      "svg": "icons/shepherd.svg",
+      "svg_sha256": "f07d1eaf28126990b321b21eb9ae29ee11e1c8fe7f687f733af586a1b73938ca",
+      "png": "icons/shepherd.png",
+      "png_sha256": "f41929a2ad9d89a0268580809af22251755139c702a941fd9815ec2c3bf524a3"
+    },
+    {
+      "name": "root-folder",
+      "svg": "icon-folder.svg",
+      "svg_sha256": "3b528b22679e57b4c83d5f947d2decea09d19ded8ab7b6dd3b5f318c841224bd",
+      "png": "icon-folder.png",
+      "png_sha256": "905d2778fcb2f600152afd35134aa34fe0a5653ef63373c4bfa9b2c8d3daadf2"
+    }
+  ]
+}

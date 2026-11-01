@@ -1,0 +1,24 @@
+/* Windows 双顶栏：上层由原生壳绘制，且仅位于主区。旧壳和 macOS 不带此能力标记。 */
+html.desk-windows-chrome {
+  --desk-caption-height: 32px;
+  --desk-main-left: var(--panel-w, 248px);
+}
+html.desk-windows-chrome #main { padding-top: var(--desk-caption-height); }
+html.desk-windows-chrome .side-brand {
+  height: 44px;
+  padding: 0 20px;
+  margin-bottom: 12px;
+}
+/* 下层保留 Desk 导航、标题与工具。导航不再压在左侧品牌行上。 */
+html.desk-windows-chrome #top-nav {
+  top: calc(var(--desk-caption-height) + 7px);
+  left: calc(var(--desk-main-left) + 10px);
+}
+html.desk-windows-chrome body.side-collapsed #top-nav,
+html.desk-windows-chrome body.term-fs #top-nav { left: 10px; }
+html.desk-windows-chrome body #overlay #overlay-head,
+html.desk-windows-chrome body #term-head,
+html.desk-windows-chrome body #conv-head,
+html.desk-windows-chrome body.app-side-double #app-side-head { padding-left: 128px; }
+html.desk-windows-chrome #term-head,
+html.desk-windows-chrome #overlay-head { min-height: 44px; }

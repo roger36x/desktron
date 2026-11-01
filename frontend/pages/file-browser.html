@@ -1,0 +1,539 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>文件浏览器</title>
+<script src="/vendor/markdown-it.min.js"></script>
+<style>
+  :root {
+    color-scheme: dark;
+    --bg: #171717; --panel: #1b1b1b; --hover: #242424; --active: #2b2b2b;
+    --line: #2c2c2c; --text: #d8d8d8; --muted: #8d8d8d; --faint: #666;
+    --accent: #9ca6f4; --code: #202020;
+    font: 13px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+  :root[data-theme="light"] {
+    color-scheme: light;
+    --bg: #fafafa; --panel: #f5f5f5; --hover: #ededed; --active: #e7e7e7;
+    --line: #dedede; --text: #333; --muted: #777; --faint: #999;
+    --accent: #5853b8; --code: #f2f2f2;
+  }
+  * { box-sizing: border-box; }
+  html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: transparent; color: var(--text); }
+  button { font: inherit; }
+  #app { height: 100%; display: flex; background: var(--bg); }
+  #side {
+    width: var(--side-w, 238px); flex: 0 0 var(--side-w, 238px); min-width: 0; overflow: hidden;
+    display: flex; flex-direction: column; background: var(--panel);
+  }
+  .side-head { height: 42px; flex: 0 0 42px; display: flex; align-items: center; padding: 0 12px 0 15px; border-bottom: 1px solid var(--line); }
+  #root-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    color: var(--text); font-size: 13px; font-weight: 600; }
+  #side-close { display: none; margin-left: auto; border: 0; background: none; color: var(--muted); font-size: 20px; }
+  #tree { flex: 1; min-height: 0; overflow: auto; padding: 7px 6px 18px; }
+  .tree-row { width: 100%; height: 27px; display: flex; align-items: center; gap: 5px; padding: 0 7px; border: 0; border-radius: 5px; background: none; color: var(--muted); text-align: left; cursor: default; }
+  .tree-row:hover { background: var(--hover); color: var(--text); }
+  .tree-row.on { background: var(--active); color: var(--text); }
+  .tree-row .tw { width: 12px; height: 15px; flex: 0 0 12px; display: inline-flex; align-items: center; justify-content: center; line-height: 0; color: var(--faint); transition: transform .12s; }
+  .tree-row .tw svg { display: block; width: 12px; height: 12px; }
+  .tree-row.open .tw { transform: rotate(90deg); }
+  .tree-row.file .tw { visibility: hidden; }
+  /* 箭头与图标使用同高居中槽，避免行内 SVG 和 span 的基线留白造成偏移。 */
+  .tree-row .ic { width: 15px; height: 15px; flex: 0 0 15px; display: inline-flex; align-items: center; justify-content: center; line-height: 0; color: var(--faint); }
+  /* 原创目录开合 PNG 共用 15px 槽，保留比例和配色；切换时不移动名称或改变行高。 */
+  .folder-icon { width: 15px; height: 15px; display: inline-flex; align-items: center; justify-content: center; }
+  .folder-icon img { display: block; width: 14px; height: 14px; flex: none; object-fit: contain; }
+  .folder-icon .folder-closed { width: 14.4px; height: 14.4px; }
+  .folder-icon .folder-open { display: none; width: 14.4px; height: 14.4px; }
+  .document-icon { display: block; width: 15px; height: 15px; background: currentColor;
+    -webkit-mask: url("/icons/file-browser-document-original-d8bd1e3d7169.png") center / contain no-repeat;
+    mask: url("/icons/file-browser-document-original-d8bd1e3d7169.png") center / contain no-repeat; }
+  .tree-row.open .folder-closed { display: none; }
+  .tree-row.open .folder-open { display: block; }
+  .tree-row .name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .tree-sub[hidden] { display: none; }
+  .tree-tip { padding: 8px 12px; color: var(--faint); font-size: 12px; }
+  /* 左右栏之间留 5px 命中区，中间只画 1px 细线；拖动时加亮，宽度按工作区持久化。 */
+  #side-divider { position: relative; z-index: 2; width: 5px; flex: 0 0 5px; cursor: col-resize; touch-action: none; }
+  #side-divider::after { content: ""; position: absolute; inset: 0 2px; background: var(--line); transition: background .12s ease; }
+  #side-divider:hover::after, body.side-resizing #side-divider::after { background: var(--muted); }
+  body.side-resizing { cursor: col-resize; user-select: none; }
+  body.side-resizing iframe { pointer-events: none; }
+  #main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  #bar { height: 42px; flex: 0 0 42px; display: flex; align-items: center; gap: 8px; padding: 0 12px; border-bottom: 1px solid var(--line); }
+  #side-toggle { width: 30px; height: 30px; padding: 0; display: inline-grid; place-items: center; border: 0; border-radius: 6px; background: none; color: var(--muted); }
+  #side-toggle:hover { background: var(--hover); color: var(--text); }
+  #side-toggle svg { width: 17px; height: 17px; }
+  #crumb { flex: 1; min-width: 0; display: flex; align-items: center; gap: 5px; overflow: hidden; white-space: nowrap; }
+  #crumb span { color: var(--faint); }
+  #crumb .fb-crumb-arrow { width: .68em; height: .68em; flex: 0 0 auto; align-self: center; background: var(--faint); -webkit-mask: url("/icons/right-arrow.png") center / contain no-repeat; mask: url("/icons/right-arrow.png") center / contain no-repeat; }
+  #crumb b { min-width: 0; overflow: hidden; text-overflow: ellipsis; color: var(--muted); font-weight: 450; }
+  #crumb b:last-child { color: var(--text); }
+  #open-with { position: relative; flex: 0 0 auto; display: inline-flex; min-width: 0; border: 1px solid var(--line); border-radius: 6px; color: var(--muted); }
+  #open-with[hidden] { display: none; }
+  #open-app, #open-app-menu { min-height: 26px; border: 0; background: transparent; color: inherit; cursor: pointer; }
+  #open-app { padding: 3px 6px 3px 10px; display: inline-flex; align-items: center; gap: 5px; font-size: 12px; }
+  #open-app-menu { width: 24px; padding: 0; display: inline-grid; place-items: center; border-left: 1px solid var(--line); }
+  #open-with:hover, #open-with.menu-open { background: var(--hover); color: var(--text); }
+  #open-app-menu svg { width: 11px; height: 11px; transition: transform .12s ease; }
+  #open-with.menu-open #open-app-menu svg { transform: rotate(180deg); }
+  /* 图标 HTML 来自父页面，但父页面的 .ap-ic 图片规则不能跨 iframe 生效。这里必须同时
+     约束容器和 img；否则浏览器的 1200×1325 原图会按固有尺寸越出“中打开”按钮。 */
+  #open-app .ap-ic, .open-app-option .ap-ic { width: 15px; height: 15px; flex: 0 0 15px;
+    display: inline-flex; align-items: center; justify-content: center; overflow: hidden; }
+  #open-app .ap-ic svg, .open-app-option .ap-ic svg,
+  #open-app .ap-ic img, .open-app-option .ap-ic img {
+    width: 100%; height: 100%; max-width: 15px; max-height: 15px; object-fit: contain;
+    display: block; filter: none;
+  }
+  #open-app-list { position: absolute; z-index: 8; top: calc(100% + 4px); right: 0; min-width: 172px; padding: 4px;
+    border: 1px solid var(--line); border-radius: 8px; background: var(--panel); box-shadow: 0 10px 28px #0006; }
+  #open-app-list[hidden] { display: none; }
+  .open-app-option { width: 100%; min-height: 26px; padding: 3px 8px; display: flex; align-items: center; gap: 7px;
+    border: 0; border-radius: 5px; background: transparent; color: var(--text); text-align: left; cursor: pointer; }
+  .open-app-option:hover, .open-app-option.on { background: var(--hover); }
+  .open-app-option .check { width: 12px; margin-left: auto; color: var(--accent); }
+  .open-app-option > svg { width: 15px; height: 15px; flex: 0 0 15px; }
+  .open-app-option:disabled { opacity: .5; cursor: wait; }
+  .open-app-separator { height: 1px; margin: 3px 3px; background: var(--line); }
+  #save-status { position: fixed; z-index: 9; right: 16px; bottom: 16px; max-width: calc(100% - 32px);
+    padding: 10px 14px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel);
+    color: var(--text); box-shadow: 0 4px 20px #0004; font-size: 12px; }
+  #save-status[hidden] { display: none; }
+  #content { flex: 1; min-height: 0; overflow: auto; background: var(--bg); }
+  .empty { height: 100%; display: grid; place-items: center; color: var(--faint); }
+  .loading { padding: 24px; color: var(--muted); }
+  .doc { width: min(780px, calc(100% - 56px)); margin: 0 auto; padding: 38px 0 80px; font-size: 14px; line-height: 1.72; }
+  .doc h1, .doc h2, .doc h3 { color: var(--text); line-height: 1.35; margin: 1.6em 0 .65em; }
+  .doc h1 { margin-top: 0; font-size: 25px; } .doc h2 { font-size: 19px; } .doc h3 { font-size: 16px; }
+  .doc p, .doc ul, .doc ol, .doc blockquote { margin: .75em 0; }
+  .doc a { color: var(--accent); text-decoration: none; }
+  .doc a:hover { text-decoration: underline; }
+  .doc code { padding: 2px 5px; border: 1px solid var(--line); border-radius: 4px; background: var(--code); font: 12px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; }
+  .doc pre { padding: 14px 16px; overflow: auto; border: 1px solid var(--line); border-radius: 8px; background: var(--code); }
+  .doc pre code { padding: 0; border: 0; background: none; }
+  .doc img { max-width: 100%; border-radius: 6px; }
+  /* 与会话正文一致：表格是可横滚的正文结构，不画封闭网格；只用横线分隔行，
+     窄侧栏中长内容自然换行，格内 code 也不再叠一层胶囊。 */
+  .doc table {
+    border-collapse: collapse; width: 100%; max-width: 100%; margin: 4px 0 14px;
+    display: block; overflow-x: auto; font-size: 13px;
+  }
+  .doc th, .doc td {
+    padding: 8px 20px 8px 0; border: 0; border-bottom: 1px solid var(--line);
+    text-align: left; vertical-align: top; white-space: normal; line-height: 1.62;
+  }
+  .doc th:last-child, .doc td:last-child { padding-right: 0; }
+  .doc th { color: var(--muted); font-weight: 400; font-size: 12.5px; border-bottom-color: var(--muted); }
+  .doc tr:last-child td { border-bottom: 0; }
+  .doc th code, .doc td code { padding: 0; border: 0; background: none; color: var(--text); }
+  .source { min-width: max-content; padding: 18px 0 40px; font: 12px/20px ui-monospace, SFMono-Regular, Menlo, monospace; }
+  .line { display: flex; min-height: 20px; padding: 0 20px 0 0; }
+  .line.on { background: color-mix(in srgb, var(--accent) 13%, transparent); }
+  .ln { width: 58px; flex: 0 0 58px; padding-right: 14px; text-align: right; color: var(--faint); user-select: none; }
+  .lc { color: var(--text); white-space: pre-wrap; word-break: break-word; }
+  .media { min-height: 100%; display: grid; place-items: center; padding: 28px; }
+  .media img { max-width: 100%; max-height: calc(100vh - 100px); object-fit: contain; }
+  .web { width: 100%; height: 100%; border: 0; background: #fff; }
+  #mask { display: none; }
+  body.side-off #side { display: none; }
+  body.side-off #side-divider { display: none; }
+  @media (pointer: coarse) and (max-width: 820px), (pointer: coarse) and (max-height: 520px) {
+    #side { position: fixed; z-index: 4; inset: 0 auto 0 0; width: min(82vw, 310px); transform: translateX(-102%); transition: transform .18s ease; box-shadow: 16px 0 34px #0008; }
+    #side-divider { display: none; }
+    body.side-open #side { transform: translateX(0); }
+    #side-close { display: block; }
+    #mask { position: fixed; z-index: 3; inset: 0; background: #0007; }
+    body.side-open #mask { display: block; }
+    body.side-off #side { display: flex; }
+    #bar { padding-left: max(8px, env(safe-area-inset-left)); padding-right: max(8px, env(safe-area-inset-right)); }
+    .doc { width: calc(100% - 36px); padding-top: 24px; }
+    .line { padding-right: 12px; } .ln { width: 44px; flex-basis: 44px; padding-right: 10px; }
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <aside id="side">
+    <div class="side-head"><span id="root-name">文件</span><button id="side-close" type="button" aria-label="关闭目录">×</button></div>
+    <div id="tree"><div class="tree-tip">读取目录…</div></div>
+  </aside>
+  <div id="side-divider" role="separator" aria-label="调整目录宽度" aria-orientation="vertical" tabindex="0"></div>
+  <div id="mask"></div>
+  <main id="main">
+    <header id="bar">
+      <button id="side-toggle" type="button" aria-label="显示或隐藏目录" aria-expanded="true"><svg viewBox="0 0 32 32" data-desk-scattered="39" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="25" height="22" rx="5"/><path d="M12 5.8v20.4"/></g></svg></button>
+      <div id="crumb"><b>文件</b></div>
+      <div id="open-with" hidden>
+        <button id="open-app" type="button"></button>
+        <button id="open-app-menu" type="button" aria-label="文件操作" aria-haspopup="menu" aria-expanded="false"><svg viewBox="0 0 32 32" data-desk-scattered="40" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="m6.8 11.8 8.3 8.8a1.25 1.25 0 0 0 1.8 0l8.3-8.8"/></g></svg></button>
+        <div id="open-app-list" role="menu" hidden></div>
+      </div>
+    </header>
+    <section id="content"><div class="empty">从左侧选择一个文件</div></section>
+  </main>
+</div>
+<div id="save-status" role="status" hidden></div>
+<script>
+(() => {
+  const q = new URLSearchParams(location.search);
+  let root = q.get("root") || q.get("domain") || "_desktop";
+  let current = q.get("path") || "";
+  let currentLine = q.get("line") || "";
+  let currentIsDir = q.get("dir") === "1";
+  const tree = document.getElementById("tree");
+  const side = document.getElementById("side");
+  const sideDivider = document.getElementById("side-divider");
+  const sideToggle = document.getElementById("side-toggle");
+  // 两种布局各自保留本页的手动选择；重复布局通知不覆盖用户展开状态。
+  const treeVisible = { full: true, compact: false };
+  let treeLayout = "";
+  function syncTreeExpanded() {
+    const visible = matchMedia("(pointer: coarse)").matches
+      ? document.body.classList.contains("side-open")
+      : !document.body.classList.contains("side-off");
+    sideToggle.setAttribute("aria-expanded", String(visible));
+  }
+  function applyTreeLayout(mode) {
+    const next = mode === "compact" ? "compact" : "full";
+    if (next === treeLayout) return;
+    treeLayout = next;
+    document.body.classList.toggle("side-off", !treeVisible[next]);
+    document.body.classList.remove("side-open");
+    syncTreeExpanded();
+  }
+  let initialLayout = document.documentElement.dataset.layout;
+  try { initialLayout = frameElement?.closest("[data-layout]")?.dataset.layout || initialLayout; } catch {}
+  applyTreeLayout(initialLayout);
+  new MutationObserver(() => applyTreeLayout(document.documentElement.dataset.layout))
+    .observe(document.documentElement, { attributes: true, attributeFilter: ["data-layout"] });
+  const content = document.getElementById("content");
+  const crumb = document.getElementById("crumb");
+  const openWith = document.getElementById("open-with");
+  const openApp = document.getElementById("open-app");
+  const openAppMenu = document.getElementById("open-app-menu");
+  const openAppList = document.getElementById("open-app-list");
+  const lastOpenAppKey = "cd_file_open_last_app";
+  const sideWidthKey = "cd_file_browser_side_width";
+  const sideWidthDefault = 238;
+  const sideWidthMin = 140;
+  const sideWidthMax = 640;
+  let openApps = [];
+  let selectedOpenApp = null;
+  let savingFile = false;
+  let saveStatusTimer;
+  const rows = new Map();
+  const expandedKey = () => "cd_file_browser_expanded_" + root;
+  let expanded = new Set(readExpanded());
+  const icons = {
+    chev: '<svg viewBox="0 0 32 32" data-desk-scattered="41" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><g transform="translate(-1.65323 -1.08592) scale(1.06787)"><path d="m11 3.5 10.2 10.6c1.1 1.1 1.1 2.7 0 3.8L11 28.5" stroke-width="2.6"/></g></g></svg>',
+    dir: '<span class="folder-icon" aria-hidden="true"><img class="folder-closed" src="/icons/file-browser-folder-closed-original-34d18b546b71.png" alt="" draggable="false"><img class="folder-open" src="/icons/file-browser-folder-open-original-615e0fce22fa.png" alt="" draggable="false"></span>',
+    file: '<span class="document-icon" aria-hidden="true"></span>',
+  };
+
+  function clampSideWidth(value) {
+    const room = Math.max(sideWidthMin, innerWidth - 320);
+    return Math.round(Math.min(Math.max(Number(value) || sideWidthDefault, sideWidthMin), sideWidthMax, room));
+  }
+  function setSideWidth(value, save) {
+    const width = clampSideWidth(value);
+    document.documentElement.style.setProperty("--side-w", width + "px");
+    sideDivider.setAttribute("aria-valuemin", String(sideWidthMin));
+    sideDivider.setAttribute("aria-valuemax", String(Math.min(sideWidthMax, Math.max(sideWidthMin, innerWidth - 320))));
+    sideDivider.setAttribute("aria-valuenow", String(width));
+    if (save) try { localStorage.setItem(sideWidthKey, String(width)); } catch {}
+    return width;
+  }
+  let savedSideWidth = sideWidthDefault;
+  try { savedSideWidth = parseInt(localStorage.getItem(sideWidthKey), 10) || sideWidthDefault; } catch {}
+  setSideWidth(savedSideWidth, false);
+
+  let sideDrag = null;
+  sideDivider.addEventListener("pointerdown", (ev) => {
+    if (ev.button !== 0 || getComputedStyle(sideDivider).display === "none") return;
+    ev.preventDefault();
+    sideDrag = { id: ev.pointerId, x: ev.clientX, width: side.getBoundingClientRect().width };
+    sideDivider.setPointerCapture(ev.pointerId);
+    document.body.classList.add("side-resizing");
+  });
+  sideDivider.addEventListener("pointermove", (ev) => {
+    if (!sideDrag || ev.pointerId !== sideDrag.id) return;
+    setSideWidth(sideDrag.width + ev.clientX - sideDrag.x, false);
+  });
+  function finishSideDrag(ev) {
+    if (!sideDrag || (ev && ev.pointerId !== sideDrag.id)) return;
+    sideDrag = null; document.body.classList.remove("side-resizing");
+    setSideWidth(side.getBoundingClientRect().width, true);
+  }
+  sideDivider.addEventListener("pointerup", finishSideDrag);
+  sideDivider.addEventListener("pointercancel", finishSideDrag);
+  sideDivider.addEventListener("keydown", (ev) => {
+    if (ev.key !== "ArrowLeft" && ev.key !== "ArrowRight") return;
+    ev.preventDefault();
+    const delta = (ev.shiftKey ? 32 : 10) * (ev.key === "ArrowRight" ? 1 : -1);
+    setSideWidth(side.getBoundingClientRect().width + delta, true);
+  });
+  addEventListener("resize", () => {
+    let preferred = sideWidthDefault;
+    try { preferred = parseInt(localStorage.getItem(sideWidthKey), 10) || sideWidthDefault; } catch {}
+    setSideWidth(preferred, false);
+  });
+
+  function applyTheme() {
+    let mode = "";
+    try { mode = parent.document.documentElement.dataset.theme || ""; } catch {}
+    if (!mode && matchMedia("(prefers-color-scheme: light)").matches) mode = "light";
+    document.documentElement.dataset.theme = mode === "light" ? "light" : "dark";
+  }
+  applyTheme();
+  try { new MutationObserver(applyTheme).observe(parent.document.documentElement, { attributes: true, attributeFilter: ["data-theme"] }); } catch {}
+  // Same-origin page: reuse the host dictionary; Chinese stays the fallback when it is unavailable.
+  function tr(key, params, zh) {
+    try { if (parent.DeskI18n) return parent.DeskI18n.t(key, params, zh); } catch {}
+    return zh;
+  }
+  try {
+    new MutationObserver(() => { if (current) renderOpenApps(); })
+      .observe(parent.document.documentElement, { attributes: true, attributeFilter: ["lang"] });
+  } catch {}
+  function appIcon(app) {
+    try { return typeof parent._appIconHTML === "function" ? parent._appIconHTML(app.label, app.key, "", "", app.icon) : ""; }
+    catch { return ""; }
+  }
+  function closeOpenAppMenu() {
+    openWith.classList.remove("menu-open"); openAppList.hidden = true; openAppMenu.setAttribute("aria-expanded", "false");
+  }
+  function renderOpenApps() {
+    try { openApps = current && typeof parent.fileOpenCandidates === "function" ? parent.fileOpenCandidates(current) : []; }
+    catch { openApps = []; }
+    let last = ""; try { last = localStorage.getItem(lastOpenAppKey) || ""; } catch {}
+    if (currentIsDir) openApps = [];
+    selectedOpenApp = openApps.find((a) => a.key === last)
+      || openApps.find((a) => selectedOpenApp && a.key === selectedOpenApp.key)
+      || openApps.find((a) => a.handler === "ide") || openApps[0] || null;
+    openWith.hidden = !current || currentIsDir;
+    if (openWith.hidden) { closeOpenAppMenu(); return; }
+    const icon = selectedOpenApp ? appIcon(selectedOpenApp) : "";
+    const prefix = tr("files.openInPrefix", {}, "在"), suffix = tr("files.openInSuffix", {}, "中打开");
+    const saveLabel = tr("files.saveAs", {}, "另存为…");
+    openApp.innerHTML = selectedOpenApp ? `${prefix ? `<span>${esc(prefix)}</span>` : ""}${icon || `<span>${esc(selectedOpenApp.label)}</span>`}${suffix ? `<span>${esc(suffix)}</span>` : ""}` : esc(saveLabel);
+    openApp.title = selectedOpenApp ? tr("files.openIn", { app: selectedOpenApp.label }, `在 ${selectedOpenApp.label} 中打开`) : saveLabel;
+    openAppMenu.setAttribute("aria-label", tr("files.fileActions", {}, "文件操作"));
+    openAppList.innerHTML = openApps.map((app) => `<button class="open-app-option${app.key === selectedOpenApp.key ? " on" : ""}" type="button" role="menuitem" data-key="${esc(app.key)}">${appIcon(app)}<span>${esc(app.label)}</span><span class="check">${app.key === selectedOpenApp.key ? "✓" : ""}</span></button>`).join("")
+      + (openApps.length ? '<div class="open-app-separator" role="separator"></div>' : "")
+      + `<button class="open-app-option" type="button" role="menuitem" data-action="save-as"${savingFile ? " disabled" : ""}><svg viewBox="0 0 32 32" data-desk-scattered="42" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4.8v15.4m-5.3-5.3 5.3 5.3 5.3-5.3M5.5 21v4.2a2 2 0 0 0 2 2h17a2 2 0 0 0 2-2V21"/></g></svg><span>${esc(saveLabel)}</span></button>`;
+  }
+  function showSaveStatus(text) {
+    const status = document.getElementById("save-status");
+    clearTimeout(saveStatusTimer); status.textContent = text; status.hidden = false;
+    saveStatusTimer = setTimeout(() => { status.hidden = true; }, 8000);
+  }
+  async function saveFileAs() {
+    if (!current || currentIsDir || savingFile) return;
+    const fileRoot = root, filePath = current;
+    savingFile = true; closeOpenAppMenu(); renderOpenApps();
+    showSaveStatus(tr("files.preparingDownload", {}, "正在准备原文件…"));
+    let host = window, link, url;
+    try {
+      const response = await fetch(`/workbench/view?root=${encodeURIComponent(fileRoot)}&path=${encodeURIComponent(filePath)}&download=1`);
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      if (!/^attachment\b/i.test(response.headers.get("Content-Disposition") || "")) throw new Error("DOWNLOAD_UNSUPPORTED");
+      const blob = await response.blob();
+      // 在宿主文档发起 Blob 下载，复用原生壳的 NSSavePanel，不替换文件预览。
+      try { if (parent.document) host = parent; } catch {}
+      url = host.URL.createObjectURL(blob);
+      link = host.document.createElement("a");
+      link.href = url; link.download = filePath.split("/").pop();
+      host.document.body.appendChild(link); link.click();
+      showSaveStatus(tr("files.downloadStarted", {}, "已发起另存为，请在系统或浏览器中确认保存。"));
+    } catch (error) {
+      showSaveStatus(error.message === "DOWNLOAD_UNSUPPORTED"
+        ? tr("files.downloadUnavailable", {}, "当前服务端不支持另存为，请更新 Desktron 后重试。")
+        : tr("files.downloadFailed", {}, "另存为失败，请重试。") + (error.message?.startsWith("HTTP ") ? ` (${error.message})` : ""));
+    } finally {
+      link?.remove();
+      if (url) host.setTimeout(() => host.URL.revokeObjectURL(url), 30000);
+      savingFile = false; renderOpenApps();
+    }
+  }
+  function openSelectedApp() {
+    if (!selectedOpenApp || !current || currentIsDir) return;
+    try { parent.openFileInApp(selectedOpenApp.key, root, current); } catch {}
+    // 打开成功后宿主才会写「最近使用」。即使本页随后被盖住，也先刷新按钮，回来时
+    // 不应还显示上一次的应用。
+    renderOpenApps();
+    closeOpenAppMenu();
+  }
+
+  function readExpanded() { try { return JSON.parse(localStorage.getItem(expandedKey()) || "[]"); } catch { return []; } }
+  function saveExpanded() { try { localStorage.setItem(expandedKey(), JSON.stringify([...expanded])); } catch {} }
+  function esc(s) { const d = document.createElement("div"); d.textContent = String(s == null ? "" : s); return d.innerHTML; }
+  function rootName() {
+    if (root === "_desktop") return "Desktron";
+    const raw = root.startsWith("abs:") ? root.slice(4) : root;
+    return raw.replace(/\/+$/, "").split("/").pop() || raw || "文件";
+  }
+  function joinPath(a, b) { return [a, b].filter(Boolean).join("/").replace(/\/{2,}/g, "/"); }
+  async function api(url) { const r = await fetch(url); if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.headers.get("content-type", "").includes("json") ? r.json() : r.text(); }
+  function fsUrl(path, extra = "") { return `/workbench/fs?root=${encodeURIComponent(root)}&path=${encodeURIComponent(path || "")}${extra}`; }
+
+  async function loadDir(path, host) {
+    host.innerHTML = '<div class="tree-tip">读取中…</div>';
+    let data;
+    try { data = await api(fsUrl(path)); } catch { host.innerHTML = '<div class="tree-tip">目录不可用</div>'; return; }
+    host.innerHTML = "";
+    const items = (data && data.items) || [];
+    if (!items.length) { host.innerHTML = '<div class="tree-tip">空目录</div>'; return; }
+    for (const item of items) {
+      const p = item.path || joinPath(path, item.name);
+      const dir = item.type === "dir";
+      const row = document.createElement("button");
+      row.type = "button";
+      row.className = `tree-row ${dir ? "dir" : "file"}`;
+      row.style.paddingLeft = `${7 + (p.split("/").length - 1) * 13}px`;
+      row.dataset.path = p;
+      row.innerHTML = `<span class="tw">${icons.chev}</span><span class="ic">${dir ? icons.dir : icons.file}</span><span class="name">${esc(item.name)}</span>`;
+      host.appendChild(row);
+      if (dir) {
+        const sub = document.createElement("div"); sub.className = "tree-sub"; sub.hidden = true; host.appendChild(sub);
+        const rec = { row, sub, loaded: false };
+        rows.set(p, rec);
+        row.onclick = () => toggleDir(p, rec);
+      } else {
+        row.onclick = () => openFile(p, "");
+      }
+    }
+  }
+  async function toggleDir(path, rec, force) {
+    const open = force == null ? rec.sub.hidden : !!force;
+    if (open && !rec.loaded) { rec.loaded = true; await loadDir(path, rec.sub); }
+    rec.sub.hidden = !open;
+    rec.row.classList.toggle("open", open);
+    if (open) expanded.add(path); else expanded.delete(path);
+    saveExpanded();
+  }
+  async function restoreTree() {
+    rows.clear(); tree.innerHTML = ""; await loadDir("", tree);
+    const wanted = [...expanded].sort((a, b) => a.split("/").length - b.split("/").length);
+    for (const p of wanted) { const rec = rows.get(p); if (rec) await toggleDir(p, rec, true); }
+    await revealCurrent();
+  }
+  async function revealCurrent() {
+    if (!current) return;
+    const segs = current.split("/");
+    const depth = currentIsDir ? segs.length : segs.length - 1;
+    for (let i = 1; i <= depth; i++) {
+      const p = segs.slice(0, i).join("/"); const rec = rows.get(p);
+      if (rec && rec.sub.hidden) await toggleDir(p, rec, true);
+    }
+    markCurrent();
+  }
+  function markCurrent() {
+    tree.querySelectorAll(".tree-row.on").forEach((n) => n.classList.remove("on"));
+    const selector = currentIsDir ? ".tree-row.dir" : ".tree-row.file";
+    const hit = [...tree.querySelectorAll(selector)].find((n) => n.dataset.path === current);
+    if (hit) { hit.classList.add("on"); hit.scrollIntoView({ block: "nearest" }); }
+  }
+  function renderCrumb() {
+    const parts = current ? current.split("/") : [];
+    crumb.innerHTML = `<b>${esc(rootName())}</b>` + parts.map((p) => `<span class="fb-crumb-arrow" aria-hidden="true"></span><b>${esc(p)}</b>`).join("");
+    document.getElementById("root-name").textContent = rootName();
+  }
+  function replaceUrl() {
+    const u = new URL(location.href); u.searchParams.set("root", root);
+    if (current) u.searchParams.set("path", current); else u.searchParams.delete("path");
+    if (currentLine) u.searchParams.set("line", currentLine); else u.searchParams.delete("line");
+    if (currentIsDir) u.searchParams.set("dir", "1"); else u.searchParams.delete("dir");
+    history.replaceState(null, "", u);
+  }
+  function renderLines(text, line) {
+    const lines = String(text).split("\n");
+    // 限制单次渲染行数，避免大文件阻塞页面。
+    const limit = 6000;
+    const shown = lines.slice(0, limit);
+    content.innerHTML = `<div class="source">${shown.map((v, i) => `<div class="line${String(i + 1) === String(line) ? " on" : ""}"><span class="ln">${i + 1}</span><span class="lc">${esc(v)}</span></div>`).join("")}${lines.length > shown.length ? `<div class="tree-tip">文件较长，仅显示前 ${limit} 行；在 IDE 中打开以查看其余内容</div>` : ""}</div>`;
+    content.querySelector(".line.on")?.scrollIntoView({ block: "center" });
+  }
+  async function renderFile() {
+    renderCrumb(); markCurrent(); renderOpenApps();
+    if (!current) { content.innerHTML = '<div class="empty">从左侧选择一个文件</div>'; return; }
+    if (currentIsDir) { content.innerHTML = '<div class="empty">已定位到左侧目录。选择其中的文件即可预览。</div>'; return; }
+    content.innerHTML = '<div class="loading">读取文件…</div>';
+    const ext = (current.split(".").pop() || "").toLowerCase();
+    const raw = `/workbench/view?root=${encodeURIComponent(root)}&path=${encodeURIComponent(current)}&raw=1`;
+    if (["png","jpg","jpeg","gif","webp","svg","bmp","ico"].includes(ext)) {
+      content.innerHTML = `<div class="media"><img src="${raw}" alt=""></div>`; return;
+    }
+    if (["html","htm"].includes(ext) && !currentLine) {
+      content.innerHTML = `<iframe class="web" sandbox="allow-scripts allow-forms allow-popups" src="/workbench/view?root=${encodeURIComponent(root)}&path=${encodeURIComponent(current)}"></iframe>`; return;
+    }
+    let text;
+    try { text = await api(fsUrl(current, "&file=1")); } catch (e) { content.innerHTML = `<div class="empty">无法预览此文件</div>`; return; }
+    if (!currentLine && ["md","markdown","mdx"].includes(ext) && window.markdownit) {
+      const parser = window.markdownit({ html: false, linkify: true, breaks: false });
+      content.innerHTML = `<article class="doc">${parser.render(String(text))}</article>`;
+    } else renderLines(text, currentLine);
+  }
+  async function openFile(path, line) {
+    current = path || ""; currentLine = line || ""; currentIsDir = false; replaceUrl();
+    // 文件树和文档内链接都是 iframe 内部导航；把最新位置同步给父应用，页面刷新后
+    // 才能与从聊天链接打开的文件走同一条恢复路径。
+    try { parent.fileBrowserRemember(root, current, currentLine); } catch {}
+    await revealCurrent(); await renderFile();
+    if (matchMedia("(pointer: coarse)").matches) document.body.classList.remove("side-open");
+    syncTreeExpanded();
+    try { parent.postMessage({ type: "app-used" }, "*"); } catch {}
+  }
+
+  content.addEventListener("click", (ev) => {
+    const a = ev.target.closest && ev.target.closest("a[href]"); if (!a) return;
+    const href = (a.getAttribute("href") || "").trim(); if (!href || href.startsWith("#")) return;
+    ev.preventDefault();
+    if (/^https?:\/\//i.test(href)) { try { parent.openPage(href, a.textContent.trim() || href); } catch { window.open(href); } return; }
+    if (/^[a-z][\w+.-]*:/i.test(href) || href.startsWith("/")) { try { parent.hsOpenFile(href); } catch {} return; }
+    const base = current.split("/").slice(0, -1); const out = base.slice();
+    for (const p of href.split("#")[0].split("/")) { if (!p || p === ".") continue; if (p === "..") out.pop(); else out.push(p); }
+    openFile(out.join("/"), "");
+  });
+  openApp.onclick = () => { if (selectedOpenApp) openSelectedApp(); else saveFileAs(); };
+  openAppMenu.onclick = (ev) => {
+    ev.stopPropagation();
+    const show = openAppList.hidden;
+    if (show) { renderOpenApps(); openAppList.hidden = false; openWith.classList.add("menu-open"); openAppMenu.setAttribute("aria-expanded", "true"); }
+    else closeOpenAppMenu();
+  };
+  openAppList.onclick = (ev) => {
+    const row = ev.target.closest && ev.target.closest(".open-app-option"); if (!row) return;
+    if (row.dataset.action === "save-as") { saveFileAs(); return; }
+    const app = openApps.find((a) => a.key === row.dataset.key); if (!app) return;
+    selectedOpenApp = app; openSelectedApp();
+  };
+  document.addEventListener("click", (ev) => { if (!openWith.contains(ev.target)) closeOpenAppMenu(); });
+  document.addEventListener("keydown", (ev) => { if (ev.key === "Escape") closeOpenAppMenu(); });
+  sideToggle.onclick = () => {
+    if (matchMedia("(pointer: coarse)").matches) document.body.classList.toggle("side-open");
+    else treeVisible[treeLayout] = !document.body.classList.toggle("side-off");
+    syncTreeExpanded();
+  };
+  function closeTreeDrawer() { document.body.classList.remove("side-open"); syncTreeExpanded(); }
+  document.getElementById("side-close").onclick = closeTreeDrawer;
+  document.getElementById("mask").onclick = closeTreeDrawer;
+  addEventListener("message", (ev) => {
+    if (ev.source === parent && ev.origin === location.origin && ev.data?.type === "desktron-layout") {
+      applyTreeLayout(ev.data.mode); return;
+    }
+    const d = ev.data || {}; if (d.type !== "file-browser-open") return;
+    const rootChanged = d.root && d.root !== root;
+    if (rootChanged) { root = d.root; expanded = new Set(readExpanded()); }
+    current = d.path || ""; currentLine = d.line || ""; currentIsDir = !!d.dir; replaceUrl();
+    (rootChanged ? restoreTree() : revealCurrent()).then(renderFile);
+  });
+
+  renderCrumb();
+  // 正文与目录并行加载，阅读无需等待历史展开项逐层恢复。
+  Promise.all([restoreTree(), renderFile()]);
+})();
+</script>
+</body>
+</html>

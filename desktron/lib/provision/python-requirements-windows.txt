@@ -1,0 +1,2 @@
+# Windows 额外运行依赖：内嵌终端经 ConPTY 运行(pywinpty)。
+pywinpty==2.0.15

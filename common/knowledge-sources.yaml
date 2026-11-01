@@ -1,0 +1,21 @@
+# 外部知识源登记表
+#
+# 不搬数据,各库留在自己的平台,消费方按登记的入口去查。Desk 的外部知识有两类挂载:
+#
+#   git  —— 知识库本身是 markdown 仓,clone 进 kb-cache 再软链进工作流的 imports/,内容取过来
+#   skill —— 知识库在平台上,只接查询能力,数据不落盘
+#
+# 本表登记的是 skill 类;git 类由 kb 注册表管,不重复登记。
+# 字段:biz_name / skill_name / skill_desc / owner / get_token_method / kb_type / storage / status。
+#
+# status: ready 可用 / broken 已登记但当前不可用 / planned 规划中
+
+sources:
+  - skill_name: lark-cli
+    biz_name: 平台通用
+    kb_type: 文档与会议
+    skill_desc: 飞书文档、表格、多维表、会议纪要与消息——领域事实的第一手来源多在这里
+    storage: 飞书
+    get_token_method: lark-cli auth login(本机凭证)
+    owner: ""
+    status: ready

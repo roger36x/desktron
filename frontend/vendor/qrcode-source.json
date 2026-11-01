@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "package": "qrcode-generator",
+  "version": "1.4.4",
+  "tarball": "https://registry.npmjs.org/qrcode-generator/-/qrcode-generator-1.4.4.tgz",
+  "package_sha256": "ab6ed47d378877441deae95972e07b2716c26545a735a23aa6b9d442b33026ed",
+  "file": "qrcode.js",
+  "sha256": "1d3b7e7b1fa3bc2db92e739400330ac663bf0ddf6ee457403bf4bb755c2943f2",
+  "license": "MIT",
+  "license_file": "qrcode-LICENSE.txt",
+  "license_sha256": "0dce694abd049784f539548fd0bee41e91c94a05cc001776c654da017a01490c",
+  "local_change": "Replace the upstream embedded UTF-8 conversion function with platform TextEncoder and Array.from; valid text bytes and QR module matrices preserved; lone surrogates normalize to U+FFFD.",
+  "limits": "No conclusion about the removed snippet license is asserted; it is absent from this source snapshot. Original package MIT notice retained."
+}

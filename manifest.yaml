@@ -1,0 +1,116 @@
+# Desktron 资产 manifest(v0 草稿)
+# 引擎无关的资产声明,desktron install 读取它渲染成目标引擎配置;运行时是裸引擎,没有中间层。
+# 字段语义见 docs/asset-model.md:class=功能轴六类,maturity=成熟度轴,gate 仅执行器/SOP 携带。
+# 本文件同时充当 schema 草稿:每节首个条目的注释即字段说明,正式 JSON Schema 等 desktron 实现时固化。
+
+version: 0
+project: desktron
+source_repo: "https://github.com/roger36x/desktron.git"
+
+# 自更新通道:客户端读取 <update_base>/release.json。空串表示未配置,设置页只做本地状态展示。
+# 环境变量 DESKTRON_UPDATE_BASE 优先于此处。
+update_base: ""
+
+# 自动更新策略。默认都是普通更新；只有发布者明确填写 mandatory_after 或提高
+# min_supported_build，客户端才会在所有工作与真人操作都静默后自动重启。
+# mandatory_after 使用 ISO 8601 UTC 时间，例如 2026-09-10T12:00:00Z。
+mandatory_after: ""
+min_supported_build: 0
+update_reason: ""
+
+# 引擎准入要求(换引擎时逐项核对)
+engine_requirements:
+  - custom_openai_anthropic_endpoint   # 自定义双协议模型端点
+  - mcp_client                          # MCP 客户端能力
+  - skill_md_loading                    # 原生读 .claude/skills/ SKILL.md
+  - agent_level_permission              # agent 级权限声明(读写分离可表达)
+  - pre_tool_hook_or_equivalent         # before 钩子或等价拦截点
+  - server_mode_with_sdk_or_openapi     # serve 模式 + SDK/OpenAPI(编排与观察的前提)
+
+# 引擎按各自渠道更新，不以版本白名单代替协议兼容检查。
+# 各引擎的执行准入和依赖体检共用各自的协议能力契约；不自动降级。
+# 资产渲染路径对全引擎统一:可选 Desk 角色正文位于 .desk/agents/;
+# skills 位于 .claude/skills/。
+engines: {}
+
+# 运行时与引擎依赖(desktron deps 体检 / install 对账)。扁平结构,check_deps.py 正则解析(不依赖 PyYAML)。
+#   kind: runtime=必备(缺则 install 阻断) / engine=引擎(缺则报安装命令,版本不符仅告警不降级) / build=仅 app-install 需要。
+#   探测=command -v <name> 取版本;min=最低版本(runtime)。
+#   引擎策略=追最新:install 装/升到最新,不钉版(只显示版本不告警)。install 缺则装、--upgrade 强制刷新。
+#   注:claude/codex/pi 各自官方安装器。
+requirements:
+  # runtime 三条也给 install:引导页要能预填一条可执行的命令,光有 hint(给人读的说明,
+  # 含「或」与备选)按不了。命令一律先探 brew——新 Mac 上没装 Homebrew 是常态,
+  # 裸跑 brew install 只会得到 command not found,对不熟悉的人是死路,得指到 brew.sh。
+  # CLI 侧(check_deps)仍打印 hint:那里要的是完整说明,不是一条待执行的命令。
+  - kind: runtime
+    name: python3
+    min: "3.11"
+    hint: "Desk 托管 Python ≥3.11；运行 desktron prepare 准备固定版本"
+    install: 'desktron prepare'
+    install_windows: 'desktron prepare'
+  - kind: runtime
+    # Desk 统一准备 Node 22.19+，覆盖前端检查及可选引擎的最高版本要求。
+    # 缺口在首次设置阶段处理，不留到引擎安装中途再暴露。
+    name: node
+    min: "22.19"
+    hint: "brew install node 或 nvm install --lts"
+    install: 'command -v brew >/dev/null && brew install node || echo "未装 Homebrew:先装 https://brew.sh,或用 nvm install --lts"'
+    # Windows 统一使用 Desk 托管 Node，不依赖系统包管理器。
+    hint_windows: "运行 desktron prepare 准备 Desk 托管 Node"
+    install_windows: 'desktron prepare'
+  - kind: runtime
+    name: git
+    # Desk 运行态只用 init/config/status/rev-parse 等基础命令。常见的 Debian 10
+    # 自带 2.20 已满足，不应为了没有用到的版本能力要求 sudo 升级。
+    min: "2.20"
+    hint: "xcode-select --install"
+    install: "xcode-select --install"
+    # Claude Code 在 Windows 上同样依赖 Git for Windows 提供的 bash。
+    hint_windows: "安装 Git for Windows:winget install --id Git.Git -e"
+    install_windows: "winget install --id Git.Git -e --source winget --accept-package-agreements --accept-source-agreements"
+  - kind: engine
+    name: claude
+    install: "curl -fsSL https://claude.ai/install.sh | bash"
+    install_windows: "irm https://claude.ai/install.ps1 | iex"
+  - kind: engine
+    name: codex
+    install: npm i -g --prefix $HOME/.local @openai/codex
+    install_windows: 'npm i -g --prefix "$HOME\.local\bin" @openai/codex'
+  - kind: engine
+    name: pi
+    # 显式走官方源，避免本机配置的镜像源尚未同步 tarball 时更新 404。
+    install: npm i -g --prefix $HOME/.local @earendil-works/pi-coding-agent@latest --registry=https://registry.npmjs.org/
+    install_windows: 'npm i -g --prefix "$HOME\.local\bin" @earendil-works/pi-coding-agent@latest --registry=https://registry.npmjs.org/'
+  - kind: build
+    name: swiftc
+    platform: darwin
+    hint: "xcode-select --install(仅 app-install 需要)"
+  - kind: build
+    name: cargo
+    platform: win32
+    hint: "安装 Rust 工具链 https://rustup.rs(仅从源码构建 Windows 原生壳需要)"
+
+assets:
+  # ---- 角色定义:不由 manifest 默认启用;普通会话保持无 Desk 角色 ----
+  agents: []
+
+  # ---- 观测器(读现实;无闸语义,schema 级约束) ----
+  # 官方能力随本仓发行；此处只登记需要运行时授权的观测器。
+  observers: []
+
+  # ---- 执行器(写现实;必须带闸语义) ----
+  executors: []                         # 尚无。入场即须声明:gate{autonomy, dry_run, reversibility, approval}
+
+  # ---- 知识 skill(给模型的先验;知识型 SoT 在 kb,此处只登记工具型与缓存) ----
+  # 项目 skill 位于 .claude/skills/，不再从独立内容仓拉取。
+  skills: []
+
+  # ---- 知识缓存(运行态,不入 git,manifest 只声明管道) ----
+  knowledge_cache: []
+
+  # ---- workflow(确定性强制;MCP 服务端) ----
+  workflows: []                         # 推迟,触发条件见 mcp/README.md
+
+  plugins: []
+  config: []

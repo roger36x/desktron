@@ -1,0 +1,52 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+  html, body { margin: 0; background: transparent; overflow: hidden; user-select: none;
+    font-family: "Segoe UI", "Microsoft YaHei UI", sans-serif; }
+  .chip { position: absolute; }
+  .glass { position: absolute; left: 0; bottom: 0; border-radius: 50%; box-sizing: border-box;
+    border: 1px solid rgba(255,255,255,.10); background: #232323; color: rgba(255,255,255,.66);
+    display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 500;
+    cursor: default; }
+  .chip.active .glass { border-color: rgba(255,255,255,.16); background: #2b2b2b; color: #189ab4; }
+  .x { position: absolute; top: 0; width: 14px; height: 14px; box-sizing: border-box; border-radius: 7px;
+    background: #161616; border: 1px solid rgba(255,255,255,.14); color: #adadad; font-size: 10px;
+    line-height: 12px; text-align: center; display: none; cursor: default; }
+  .chip:hover .x { display: block; }
+</style></head>
+<body>
+<script>
+// Windows 壳的悬浮标签条：宿主把窗口区域裁成各个圆形(悬停的标签再加上关闭角标)，
+// 圆外的鼠标与绘制都落到身后的网页。点击、关闭与悬停经 IPC 交给宿主。
+(() => {
+  const send = (message) => { try { window.ipc.postMessage(JSON.stringify(message)); } catch (_) {} };
+  window.__renderTags = ({ origin, items }) => {
+    document.body.replaceChildren();
+    for (const item of items || []) {
+      const size = Number(item.w) || 30;
+      const chip = document.createElement('div');
+      chip.className = 'chip' + (item.active ? ' active' : '');
+      chip.style.left = (Number(item.x) - origin.x) + 'px';
+      chip.style.top = (Number(item.y) - 5 - origin.y) + 'px';
+      chip.style.width = (size + 5) + 'px';
+      chip.style.height = (size + 5) + 'px';
+      const glass = document.createElement('div');
+      glass.className = 'glass';
+      glass.style.width = glass.style.height = size + 'px';
+      glass.textContent = String(item.ch || '');
+      glass.addEventListener('mousedown', () => send({ type: 'click', id: item.id }));
+      const close = document.createElement('div');
+      close.className = 'x';
+      close.style.left = (size - 9) + 'px';
+      close.textContent = '×';
+      close.addEventListener('mousedown', (event) => { event.stopPropagation(); send({ type: 'close', id: item.id }); });
+      chip.addEventListener('mouseenter', () => send({ type: 'hover', id: item.id }));
+      chip.addEventListener('mouseleave', () => send({ type: 'hover', id: '' }));
+      chip.append(glass, close);
+      document.body.append(chip);
+    }
+  };
+  send({ type: 'ready' });
+})();
+</script>
+</body></html>

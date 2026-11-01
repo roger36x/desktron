@@ -1,0 +1,60 @@
+name: Windows VM acceptance (manual)
+
+# Opt-in only. This job installs and gracefully closes/restarts an application
+# inside the disposable hosted runner. Never run it on a developer workstation.
+on:
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: 'Trusted Offline checks run ID containing the candidate ZIP'
+        required: true
+        type: string
+      sha256:
+        description: 'ZIP SHA-256 independently obtained from the trusted release evidence'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  disposable-installation:
+    runs-on: windows-latest
+    timeout-minutes: 45
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: desktron-windows-utf8-0
+          path: ${{ runner.temp }}/desktron-candidate
+          run-id: ${{ inputs.run_id }}
+          github-token: ${{ github.token }}
+      - name: Prepare acceptance orchestrator (not the product runtime)
+        run: |
+          . ./scripts/windows/python_runtime.ps1
+          $python = Install-DeskPython -Spec desktron/lib/provision/python-runtime.json -Runtime "$env:RUNNER_TEMP/desktron-acceptance-orchestrator"
+          "ACCEPTANCE_PYTHON=$python" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+      - name: Install, cold reopen, supervised restart and same-package reinstall
+        env:
+          ACCEPTANCE_SHA256: ${{ inputs.sha256 }}
+          PYTHONIOENCODING: utf-8
+        run: |
+          $archives = @(Get-ChildItem "$env:RUNNER_TEMP/desktron-candidate" -Filter '*.zip' -Recurse)
+          if ($archives.Count -ne 1) { throw 'Exactly one candidate ZIP required' }
+          & $env:ACCEPTANCE_PYTHON scripts/dev/windows_vm_acceptance.py `
+            --archive $archives[0].FullName --sha256 $env:ACCEPTANCE_SHA256 `
+            --report "$env:RUNNER_TEMP/windows-vm-acceptance.json" --disposable-profile
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Upload sanitized acceptance evidence only
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-vm-acceptance-evidence
+          path: ${{ runner.temp }}/windows-vm-acceptance.json
+          if-no-files-found: error

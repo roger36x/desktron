@@ -1,0 +1,104 @@
+# Claude Code 本地态(资产入 git,本地配置与会话态不入)
+.claude/settings.local.json
+.claude/worktrees/
+# .claude/skills:基座 skill(真目录,随 payload 入 git)与 content 领域 skill
+# (link_content_skills() 运行时软链入,本机相关、不入 git)同居一目录。
+# 放行基座 skill,其余(领域软链)忽略。新增基座 skill 要在此补一行 !。
+.claude/skills/*
+!.claude/skills/app-control/
+!.claude/skills/contribute/
+!.claude/skills/delete-app/
+!.claude/skills/delete-workspace/
+!.claude/skills/jev/
+!.claude/skills/journal/
+!.claude/skills/kb-review/
+!.claude/skills/knowledge/
+!.claude/skills/make-app/
+!.claude/skills/make-arrangement/
+!.claude/skills/make-workspace/
+!.claude/skills/memory/
+!.claude/skills/pi-agent-setup/
+# 已退役引擎的本机依赖与缓存可能仍在旧工作树中,不重新纳入版本控制。
+.opencode/
+# 多引擎本机态:由运行时生成/同步,不作为分发资产入 git。
+.agents/
+.codex/
+# Cursor 项目级 hook 是运行态生成的本机配置,含绝对路径,不入 git。
+.cursor/
+
+# 本地凭证(skills 依赖的 SSO 会话按机器单独生成,见各 SKILL.md)
+sso_session.json
+
+# Python / Node 临时物
+__pycache__/
+*.pyc
+node_modules/
+# 桌面壳构建产物(Rust;不入 git,不随发行)
+desktop/target/
+
+# macOS
+.DS_Store
+# 分发产出(desktron release)
+dist/
+
+# 工作流目录与消费方工作层均为运行态；开发态 REPO_ROOT=源码仓时也兜住。
+# 运行态 WORKSPACE 的 .gitignore 由 memory_store._ensure_worklayer_gitignore 幂等补,
+# 二者同一组 pattern。kb-cache 落 ~/.local/share,不在仓内,无需列。
+.memory/
+/domains/
+
+# 已退役 attention 子系统的本地遗留数据；继续忽略，避免旧绝对路径进入 git。
+.attention/
+
+# 运行态 / 草稿产物(本机,不入 git、不随发行)
+# 浏览器操控(Playwright MCP)运行日志
+.playwright-mcp/
+# make-app 本机运行态(app / page 注册产物)
+.workbench/
+# 纯临时产出物(scratch,不参与记忆生命周期)。锚定仓根:不锚会误伤 knowledge/staging/ 等已跟踪目录
+/temp/
+# 原型 / 探索草稿(非交付物)
+explorations/
+# superpowers 设计草稿(非交付物)
+docs/superpowers/
+# design-samples 里 vendor 进来的第三方库产物(npm 装 + esbuild 打包,21MB 级,纯本地试验不入 git)
+# 不写死 docs/design-samples/vendor/:2026-09-09 文档重组把设计稿整体归档进 docs/history/,
+# 路径一变这条就失配,238 个文件 20.7MB 随 git add -A 进了库,发行包从 23MB 涨到 39MB。
+#改成按目录名匹配,设计稿搬到哪里都还罩得住。
+**/design-samples/**/vendor/
+
+# excalidraw 应用的第三方库产物(npm + esbuild 打出来的,23MB,构建脚本在会话产物里,不入 git)
+frontend/app-assets/excalidraw/vendor/
+
+# 文件浏览 APP 的 Monaco 打包产物(约 12MB,按 src/README.md 重打)
+frontend/app-assets/files/vendor/
+# desktron 工作层(运行态,不入 git)
+knowledge/
+# Claude 读取准入 Hook 是源码，不应被上述运行态目录规则误排除。
+!/.claude/skills/knowledge/
+!/.claude/skills/knowledge/scripts/
+!/.claude/skills/knowledge/scripts/kn_read_hook.py
+domains/*/temp
+
+# 运行态日志:app.log 由后端写,不进版本库
+desktron/lib/log/
+# desktron 工作层(运行态,不入 git)
+domains/*/memory
+domains/*/imports
+
+# 本机配置与凭证:任何环境文件、证书与私钥都不入 git
+.env
+.env.*
+!.env.example
+*.local.json
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Windows 原生壳(Rust)构建目录
+desktop/windows/target/
+
+# 合并或打补丁留下的备份
+*.orig
+*.rej

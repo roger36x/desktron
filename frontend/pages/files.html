@@ -1,0 +1,331 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">  <!-- 没有这一条,手机上顶层打开这一页会按 980px 排版,窄屏的媒体查询根本不匹配 -->
+<title>Monaco IDE</title>
+<script>
+  // 先于 CSS 与 Monaco 落明暗态，避免 iframe 初次出现时闪一下另一套底色。
+  (() => {
+    let mode = "";
+    try { mode = parent.document.documentElement.dataset.theme || ""; } catch {}
+    if (!mode) mode = new URLSearchParams(location.search).get("theme") || "";
+    if (!mode && matchMedia("(prefers-color-scheme: light)").matches) mode = "light";
+    document.documentElement.dataset.theme = mode === "light" ? "light" : "dark";
+  })();
+</script>
+<link rel="stylesheet" href="/app-assets/files/vendor/app.bundle.css">
+<style>
+  /* 与主会话过程区共用的代码字体。Monaco 在独立 iframe 文档内，宿主注册的 font-face
+     不会穿透进来，因此这里需要登记同一份字体资源与 CJK 2:1 宽度补偿。 */
+  @font-face {
+    font-family: "Desk Mono";
+    src: url("/vendor/fonts/JetBrainsMono-Regular.woff2") format("woff2");
+    font-weight: 400; font-style: normal; font-display: swap;
+  }
+  @font-face {
+    font-family: "Desk Mono CJK";
+    src: local("PingFang SC"), local("PingFangSC-Regular");
+    size-adjust: 120%;
+    unicode-range: U+2E80-303F, U+3040-9FFF, U+AC00-D7AF, U+F900-FAFF, U+FF00-FFEF;
+  }
+  @font-face {
+    font-family: "Desk Seti";
+    src: url("/app-assets/files/vendor/seti.woff") format("woff");
+    font-style: normal; font-weight: normal; font-display: block;
+  }
+  /* GitHub / Primer 的语义关系，表面与文字改用 Desk 的中性灰阶。Monaco token 色在 entry.js；
+     这里统一文件树、标签、面包屑、工具栏、按钮和弹窗，品牌紫只用于交互态，
+     文件夹蓝与成功/错误/警告只承担各自语义，不给整片 chrome 染色。 */
+  :root {
+    color-scheme: dark;
+    --gh-canvas: #191919; --gh-canvas-subtle: #1e1e1e; --gh-canvas-inset: #171717;
+    --gh-fg: #e8e8e8; --gh-fg-muted: #b1b1b1; --gh-fg-subtle: #8f8f8f;
+    --gh-tree-fg: #c3c3c3;
+    --gh-border: rgba(255,255,255,.14); --gh-border-muted: rgba(255,255,255,.08);
+    --gh-accent: #97a3f7; --gh-accent-emphasis: #838ff0; --gh-accent-subtle: rgba(151, 163, 247, .14);
+    --gh-neutral-subtle: rgba(255,255,255,.045); --gh-neutral-muted: rgba(255,255,255,.12);
+    --gh-button: #262626; --gh-button-hover: #303030;
+    --gh-success: #56d364; --gh-success-emphasis: #2f7d43; --gh-success-hover: #398f4e;
+    --gh-danger: #f2686b; --gh-attention: #c79a43;
+  }
+  :root[data-theme="light"] {
+    color-scheme: light;
+    --gh-canvas: #ffffff; --gh-canvas-subtle: #f7f7f8; --gh-canvas-inset: #f3f3f4;
+    --gh-fg: #171717; --gh-fg-muted: #575757; --gh-fg-subtle: #8f8f8f;
+    --gh-tree-fg: #464646;
+    --gh-border: rgba(0,0,0,.15); --gh-border-muted: rgba(0,0,0,.08);
+    --gh-accent: #4f46b8; --gh-accent-emphasis: #4f46b8; --gh-accent-subtle: rgba(79,70,184,.10);
+    --gh-neutral-subtle: rgba(0,0,0,.035); --gh-neutral-muted: rgba(0,0,0,.10);
+    --gh-button: #f3f3f4; --gh-button-hover: #ececec;
+    --gh-success: #1a7f37; --gh-success-emphasis: #1f883d; --gh-success-hover: #1a7f37;
+    --gh-danger: #cf222e; --gh-attention: #9a6700;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; width: 100%; overflow: hidden; }
+  body {
+    display: flex; background: var(--gh-canvas); color: var(--gh-fg);
+    font: 13px/1.5 -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", sans-serif;
+  }
+
+  /* 左:搜索 + 目录树 */
+  #side { flex: none; width: 240px; display: flex; flex-direction: column; min-width: 0;
+    background: var(--gh-canvas-inset); border-right: 1px solid var(--gh-border); }
+  #search { flex: none; padding: 8px; }
+  #search-field {
+    display: flex; align-items: center; gap: 7px; height: 32px; padding: 0 9px;
+    border: 1px solid var(--gh-border-muted); border-radius: 7px;
+    background: var(--gh-neutral-subtle); cursor: text;
+  }
+  #search-icon { flex: none; width: 14px; height: 14px; color: var(--gh-fg-subtle); }
+  .search-input { position: relative; flex: 1; min-width: 0; height: 100%; }
+  #q {
+    display: block; width: 100%; height: 100%; min-width: 0; padding: 0; border: 0; border-radius: 0;
+    background: transparent; color: var(--gh-fg); font: inherit; font-size: 13px; outline: none;
+    appearance: none; -webkit-appearance: none; box-shadow: none;
+  }
+  /* 中性单线焦点，不叠加高亮圈。图标和留白属于同一可聚焦搜索框。 */
+  #search-field:focus-within { border-color: var(--gh-fg-muted); }
+  #q::placeholder { color: var(--gh-fg-subtle); opacity: 1; }
+  /* 结果分组的小标题:两组结果共用一个框,靠它分开;不做成可点的分区,只是标签。 */
+  .grp {
+    padding: 8px 10px 3px; color: var(--gh-fg-subtle); font-size: 11px; letter-spacing: .3px;
+    text-transform: none; user-select: none;
+  }
+  /* 内容命中:上行路径与行号,下行原文。原文压暗一档,先读到的是「在哪个文件」。 */
+  .row.hit { align-items: flex-start; padding-top: 4px; padding-bottom: 4px; }
+  .hit-w { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+  .hit-p { font-size: 11px; color: var(--gh-fg-subtle); overflow: hidden; text-overflow: ellipsis; }
+  .hit-t {
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace; font-size: 11.5px;
+    color: var(--gh-fg-muted); overflow: hidden; text-overflow: ellipsis;
+  }
+  #tree, #results { flex: 1; min-height: 0; overflow: auto; padding: 7px 6px 18px; }
+  #results { display: none; }
+  #results:not([hidden]) { display: block; }
+  /* 文件树的行高、缩进与文字排版对齐文件浏览器；保留 IDE 的图标及主题色。 */
+  .row {
+    display: flex; align-items: center; gap: 5px; min-height: 27px; padding: 0 7px;
+    cursor: default; white-space: nowrap; color: var(--gh-tree-fg); border-radius: 5px; margin: 0;
+    font: 400 13px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+  .row:hover { background: var(--gh-neutral-subtle); }
+  .row.on { background: var(--gh-accent-subtle); color: var(--gh-fg); }
+  .row .tw {
+    flex: 0 0 12px; width: 12px; height: 12px; display: inline-flex; align-items: center;
+    justify-content: center; color: var(--gh-fg-subtle);
+  }
+  .row .tw svg {
+    display: block; width: 12px; height: 12px; transform: rotate(0deg);
+    transition: transform .12s ease;
+  }
+  .row .tw.open svg { transform: rotate(90deg); }
+  .row .tw.leaf, .row .tw.empty { opacity: 0; }
+  .row .ic {
+    flex: none; display: flex; align-items: center; justify-content: center;
+    width: 16px; height: 20px;
+  }
+  .row[data-type="dir"] .ic { width: 16px; opacity: .95; }
+  .folder-icon { display: block; width: 15px; height: 15px; object-fit: contain; filter: none; }
+  .seti-file-icon {
+    display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 18px;
+    color: var(--seti-dark); font: normal 16px/1 "Desk Seti"; -webkit-font-smoothing: antialiased;
+  }
+  :root[data-theme="light"] .seti-file-icon { color: var(--seti-light); }
+  .row .nm { min-width: 0; overflow: hidden; text-overflow: ellipsis; line-height: inherit; }
+  /* 收起靠的是 sub.hidden。作者样式里的 display 会盖过 [hidden] 自带的 display:none,
+     所以这里必须显式让出——否则点了折叠,状态翻了、图标也变了,唯独目录不收,
+     再点一次又按「展开」处理,看起来就是永远收不起来。上面 #results 那两条是同一回事。 */
+  .sub { display: block; }
+  .sub[hidden] { display: none; }
+  .tip { padding: 10px 12px; color: var(--gh-fg-subtle); font-size: 12px; }
+
+  /* 4px 是拖拽命中区，不等于视觉线宽。#side 自己已有 1px 右边框，反馈线必须覆盖
+     那一根（divider 左缘 -1px），不能画在命中区中央，否则会出现两条平行线。 */
+  #divider { flex: none; position: relative; width: 4px; cursor: col-resize; background: transparent; }
+  #divider::after {
+    content: ""; position: absolute; top: 0; bottom: 0; left: -1px; width: 1px;
+    background: transparent; pointer-events: none;
+  }
+  #divider:hover::after, #divider.dragging::after { background: var(--gh-fg-muted); }
+  #side-mask { display: none; }
+  /* 与 Desk 顶部的侧栏钮同语义：宽屏收起后正文扩展，窄屏则唤出覆盖式目录。 */
+  #m-side {
+    display: inline-flex; flex: 0 0 auto; align-items: center; justify-content: center;
+    width: 30px; height: 30px; margin-left: -6px; padding: 0;
+    border: 0 !important; background: transparent !important; color: var(--gh-fg-muted);
+  }
+  #m-side:hover { color: var(--gh-fg); background: var(--gh-neutral-subtle) !important; }
+  body.side-collapsed #side, body.side-collapsed #divider { display: none; }
+
+  /* 标签条:压在面包屑之上,与 VS Code 同序(标签 → 面包屑 → 正文)。
+     没有开着的文件时整条不占位,首屏还是干净的编辑面。 */
+  #tabs {
+    flex: none; display: flex; align-items: stretch; height: 32px; overflow-x: auto;
+    background: var(--gh-canvas-subtle); border-bottom: 1px solid var(--gh-border-muted); scrollbar-width: none;
+  }
+  #tabs::-webkit-scrollbar { display: none; }
+  #tabs[hidden] { display: none; }
+  .tab {
+    flex: none; display: flex; align-items: center; gap: 6px; max-width: 200px;
+    padding: 0 8px 0 12px; border-right: 1px solid var(--gh-border-muted); cursor: default;
+    color: var(--gh-fg-muted); font-size: 12px; white-space: nowrap; user-select: none;
+  }
+  .tab:hover { background: var(--gh-canvas-subtle); color: var(--gh-fg); }
+  /* 当前项靠同正文相连的底色区分，不再顶一条电光蓝边；品牌紫留给焦点与选区。 */
+  .tab.on { background: var(--gh-canvas); color: var(--gh-fg); box-shadow: inset 0 -1px 0 var(--gh-canvas); }
+  .tab .tb-n { overflow: hidden; text-overflow: ellipsis; }
+  .tab .tb-ic { flex: none; width: 16px; height: 18px; display: inline-flex; align-items: center; }
+  .tab .tb-x {
+    flex: none; width: 15px; height: 15px; line-height: 14px; text-align: center;
+    border-radius: 3px; color: var(--gh-fg-subtle); font-size: 13px; visibility: hidden;
+  }
+  .tab:hover .tb-x, .tab.on .tb-x { visibility: visible; }
+  .tab .tb-x:hover { background: var(--gh-neutral-muted); color: var(--gh-fg); }
+  /* 有未保存改动:关闭钮位置常驻一个点,不悬停时也看得见;悬停才换回 × */
+  .tab.dirty .tb-x { visibility: visible; color: var(--gh-attention); }
+  .tab.dirty:not(:hover) .tb-x { font-size: 0; }
+  .tab.dirty:not(:hover) .tb-x::before { content: "•"; font-size: 15px; }
+
+  /* 右:顶栏 + 编辑器 */
+  #main { flex: 1; min-width: 0; display: flex; flex-direction: column; background: var(--gh-canvas); }
+  #bar {
+    flex: none; display: flex; align-items: center; gap: 8px; height: 34px;
+    padding: 0 10px; border-bottom: 1px solid var(--gh-border-muted); background: var(--gh-canvas);
+  }
+  #crumb { flex: 1; min-width: 0; display: flex; align-items: center; gap: 4px; overflow: hidden; font-size: 12px; }
+  .crumb-file-icon { flex: none; width: 16px; height: 18px; display: inline-flex; align-items: center; }
+  .seg { color: var(--gh-fg-muted); white-space: nowrap; }
+  .seg.root { color: var(--gh-fg-subtle); }
+  .seg:last-child { color: var(--gh-fg); }
+  .seg.dirty::after { content: "•"; margin-left: 5px; color: var(--gh-attention); }
+  .sep { color: var(--gh-fg-subtle); }
+  #bar button {
+    flex: none; padding: 3px 10px; border: 1px solid var(--gh-border); border-radius: 5px;
+    background: var(--gh-button); color: var(--gh-fg); font: inherit; font-size: 12px; cursor: pointer;
+  }
+  #bar button:hover { background: var(--gh-button-hover); }
+  /* 三个编辑动作使用同一套弱按钮：默认无描边，悬停才抬高一档，不因状态切换改变造型。 */
+  #bar #btn-diff, #bar #btn-save, #bar #btn-cancel {
+    height: 24px; padding: 0 8px; border: 0; background: var(--gh-button);
+    color: var(--gh-fg-muted); font-size: 11.5px;
+  }
+  #bar #btn-diff:hover, #bar #btn-save:hover, #bar #btn-cancel:hover {
+    border: 0; background: var(--gh-button-hover); color: var(--gh-fg);
+  }
+  #bar #btn-diff:focus-visible, #bar #btn-save:focus-visible, #bar #btn-cancel:focus-visible {
+    outline: 1px solid var(--gh-fg-subtle); outline-offset: -1px;
+  }
+  #msg { flex: none; font-size: 12px; color: var(--gh-success); }
+  #msg.bad { color: var(--gh-danger); }
+  #ed { flex: 1; min-height: 0; }
+  /* Monaco 会接管手机触摸事件，iOS 因而无法给代码弹出原生的选择/剪切/粘贴菜单。
+     手机编辑面改用真实 textarea；行号另层绘制，自动换行后仍由 JS 按实际行高对齐。 */
+  #mobile-ed { flex: 1; min-height: 0; position: relative; overflow: hidden; background: var(--gh-canvas); }
+  #mobile-ed[hidden] { display: none; }
+  #mobile-ed-stage {
+    position: absolute; inset: 0; width: 110.345%; height: 110.345%;
+    display: grid; grid-template-columns: 34px minmax(0, 1fr);
+    transform: scale(.90625); transform-origin: left top;
+  }
+  #mobile-lines { position: relative; overflow: hidden; border-right: 1px solid var(--gh-border-muted);
+    color: var(--gh-fg-subtle); font: 16px/25.38px "Desk Mono", "Desk Mono CJK", Menlo, monospace;
+    user-select: none; -webkit-user-select: none; }
+  #mobile-line-track { position: absolute; inset: 0; will-change: transform; }
+  #mobile-line-track span { position: absolute; right: 7px; font-variant-numeric: tabular-nums; }
+  #mobile-input { width: 100%; height: 100%; min-width: 0; padding: 10px 12px 28px; border: 0; outline: 0;
+    resize: none; overflow: auto; border-radius: 0; background: var(--gh-canvas); color: var(--gh-fg);
+    caret-color: var(--gh-accent); font: 16px/25.38px "Desk Mono", "Desk Mono CJK", Menlo, monospace;
+    white-space: pre-wrap; overflow-wrap: break-word; tab-size: 4; -webkit-overflow-scrolling: touch;
+    -webkit-user-select: text; user-select: text; -webkit-touch-callout: default; }
+  #mobile-measure { position: absolute; z-index: -1; left: 34px; right: 0; top: 0; visibility: hidden;
+    padding: 10px 12px 28px; font: 16px/25.38px "Desk Mono", "Desk Mono CJK", Menlo, monospace;
+    white-space: pre-wrap; overflow-wrap: break-word; tab-size: 4; }
+  #mobile-measure > div { min-height: 25.38px; }
+  /* 差异视图与编辑器同占一格,靠 hidden 互斥。作者样式里给了 display,必须显式让出,
+     否则 [hidden] 压不住它——同 .sub 那处。 */
+  #dif { flex: 1; min-height: 0; display: block; }
+  #dif[hidden] { display: none; }
+  #ed[hidden] { display: none; }
+
+  /* 只有真实触屏窄屏才切成抽屉。Desk 的右侧应用栏虽然也可能小于 820px，但桌面鼠标环境
+     仍应与主区全屏 IDE 共用同一套文件树、标签、面包屑和工具栏密度，不能仅凭宽度误判
+     成手机并整体放大。横屏手机用高度兜底，两个分支都必须满足 pointer:coarse。 */
+  @media (pointer: coarse) and (max-width: 820px),
+         (pointer: coarse) and (max-height: 520px) {
+    html, body { height: 100dvh; }
+    #side {
+      position: fixed; inset: 0 auto 0 0; z-index: 20;
+      width: min(84vw, 320px) !important; max-width: calc(100vw - 44px);
+      transform: translateX(-101%); transition: transform .2s ease;
+      box-shadow: 16px 0 36px rgba(0,0,0,.24);
+    }
+    body.side-open #side { transform: none; }
+    #side-mask {
+      position: fixed; inset: 0; z-index: 19; display: none;
+      border: 0; background: rgba(0,0,0,.34); -webkit-tap-highlight-color: transparent;
+    }
+    body.side-open #side-mask { display: block; }
+    #divider { display: none; }
+    #m-side { width: 40px; height: 40px; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+    #m-side:active { background: var(--gh-neutral-subtle) !important; }
+    #tabs { height: 44px; }
+    .tab { min-width: 96px; max-width: 156px; padding-left: 10px; }
+    .tab .tb-x { visibility: visible; width: 28px; height: 28px; line-height: 27px; }
+    #bar { height: 48px; gap: 5px; padding: 0 8px; }
+    #bar button:not(#m-side) { min-height: 40px; padding: 4px 10px; touch-action: manipulation; }
+    #crumb .seg:not(:last-child), #crumb .sep:not(:last-of-type) { display: none; }
+    #search-field { height: 36px; }
+    /* 保留 16px 原生输入字号以避免 iOS 聚焦放大，视觉缩至 13px；
+       同步补偿宽高，不能裁掉右端文字或挤占文件树。缩放只作用于搜索输入。 */
+    #q {
+      width: calc(100% * 16 / 13); height: calc(100% * 16 / 13); font-size: 16px;
+      transform: scale(.8125); transform-origin: left top;
+    }
+    /* 目录树沿用文件浏览器的 27px 紧凑行高；仅搜索结果保留较大的触控目标。 */
+    #results .row { min-height: 44px; padding-top: 9px; padding-bottom: 9px; }
+    /* 差异视图仍是 Monaco；它的真实输入节点保持 16px，避免 iOS 聚焦缩放。 */
+    .monaco-editor textarea.inputarea { font-size: 16px !important; }
+  }
+</style>
+</head>
+<body>
+  <div id="side">
+    <div id="search">
+      <label id="search-field">
+        <svg id="search-icon" viewBox="0 0 32 32" data-desk-scattered="43" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.7" cy="13.7" r="8.7"/><path d="m20.1 20.1 6.7 6.7"/></g></svg>
+        <span class="search-input"><input id="q" role="searchbox" aria-label="搜索文件与内容"
+          placeholder="搜索文件与内容" spellcheck="false" autocomplete="off" autocapitalize="off"
+          autocorrect="off" enterkeyhint="search"></span>
+      </label>
+    </div>
+    <div id="results" hidden></div>
+    <div id="tree"></div>
+  </div>
+  <div id="divider"></div>
+  <button id="side-mask" type="button" aria-label="收起文件目录"></button>
+  <div id="main">
+    <div id="tabs" hidden></div>
+    <div id="bar">
+      <button id="m-side" type="button" aria-label="打开文件目录" aria-expanded="false">
+        <svg viewBox="0 0 32 32" width="17" height="17" data-desk-scattered="44" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="25" height="22" rx="5"/><path d="M12 5.8v20.4"/></g></svg>
+      </button>
+      <div id="crumb"></div>
+      <span id="msg"></span>
+      <button id="btn-diff" type="button" hidden>差异</button>
+      <button id="btn-save" type="button" hidden>保存</button>
+      <button id="btn-cancel" type="button" hidden>取消</button>
+    </div>
+    <div id="ed"></div>
+    <div id="mobile-ed" hidden>
+      <div id="mobile-ed-stage">
+        <div id="mobile-lines" aria-hidden="true"><div id="mobile-line-track"></div></div>
+        <textarea id="mobile-input" wrap="soft" spellcheck="false" autocomplete="off"
+          autocorrect="off" autocapitalize="off" aria-label="文件内容"></textarea>
+        <div id="mobile-measure" aria-hidden="true"></div>
+      </div>
+    </div>
+  </div>
+  <script src="/app-assets/files/vendor/app.bundle.js"></script>
+</body>
+</html>

@@ -1,0 +1,3 @@
+# CI/offline tests use the product's fixed runtime dependencies, plus pytest.
+-r ../../desktron/lib/provision/python-requirements.txt
+pytest==9.0.2

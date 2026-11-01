@@ -1,0 +1,113 @@
+name: Offline checks
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  offline-checks:
+    runs-on: macos-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Prepare managed Python
+        env:
+          DESKTRON_DATA_HOME: ${{ runner.temp }}/desktron-ci/data
+        run: |
+          source desktron/lib/provision/python_runtime.sh
+          desk_python_ensure
+          python3 -c 'import sys; assert sys.version_info[:3] == (3, 12, 14)'
+          echo "$DESK_PYTHON_HOME/bin" >> "$GITHUB_PATH"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22.23.2"
+      - name: Review proposed public tree
+        run: python3 scripts/check_public_tree.py --reviewed
+      - name: Prepare Python test dependencies
+        run: python3 -m pip install --quiet -r scripts/dev/python-test-requirements.txt
+      - name: Prepare offline Pi SDK
+        run: |
+          npm install --global --prefix "$RUNNER_TEMP/desktron-ci-pi" --ignore-scripts @earendil-works/pi-coding-agent@1.0.2
+          echo "$RUNNER_TEMP/desktron-ci-pi/bin" >> "$GITHUB_PATH"
+      - name: Build built-in app assets
+        run: bash scripts/dev/build-builtin-apps.sh
+      - name: Offline full gate
+        run: bash scripts/dev/refactor-gate.sh full
+
+  windows-checks:
+    # Required SDK/proxy/pipe regressions cannot skip. Verify the final ZIP's
+    # extracted payload, not just the source checkout. No model requests.
+    runs-on: windows-latest
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        python-utf8: ['0', '1']
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Prepare managed Python
+        run: |
+          . ./scripts/windows/python_runtime.ps1
+          $python = Install-DeskPython -Spec desktron/lib/provision/python-runtime.json -Runtime "$env:RUNNER_TEMP/desktron-ci/runtime"
+          & $python -c 'import sys; assert sys.version_info[:3] == (3, 12, 14)'
+          Split-Path -Parent $python | Out-File -FilePath $env:GITHUB_PATH -Append -Encoding utf8
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22.23.2"
+      - name: Prepare Python test dependencies
+        run: |
+          python -m pip install --quiet -r scripts/dev/python-test-requirements.txt
+          python -m pip install --quiet -r desktron/lib/provision/python-requirements-windows.txt
+      - name: Prepare offline Pi SDK
+        run: |
+          npm install --global --prefix "$env:RUNNER_TEMP/desktron-ci-pi" --ignore-scripts @earendil-works/pi-coding-agent@1.0.2
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          "$env:RUNNER_TEMP/desktron-ci-pi" | Out-File -FilePath $env:GITHUB_PATH -Append -Encoding utf8
+          # The shell boundary regression requires Git Bash, not the WSL shim.
+          'C:\Program Files\Git\bin' | Out-File -FilePath $env:GITHUB_PATH -Append -Encoding utf8
+      - name: Parse Windows installer scripts
+        run: |
+          foreach ($file in 'scripts/windows/install.ps1', 'scripts/windows/python_runtime.ps1') {
+            $errors = $null
+            [System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path $file), [ref]$null, [ref]$errors) | Out-Null
+            if ($errors) { $errors | ForEach-Object { Write-Error "${file}: $_" }; exit 1 }
+          }
+      - name: Shared shell scripts match the macOS shell
+        run: python scripts/dev/extract_native_scripts.py --check
+      - name: Build built-in app assets for full regression
+        run: |
+          bash scripts/dev/build-builtin-apps.sh
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Windows offline full gate in both UTF-8 modes
+        env:
+          PYTHONUTF8: ${{ matrix.python-utf8 }}
+          PYTHONIOENCODING: utf-8
+          # Hosted Windows runners are much slower than local machines; the largest
+          # Shepherd files took 74-120+ s there (run 37659906654).
+          DESKTRON_TEST_TIMEOUT: "300"
+        run: |
+          bash scripts/dev/refactor-gate.sh full
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Windows delivery gate and final ZIP acceptance
+        env:
+          PYTHONUTF8: ${{ matrix.python-utf8 }}
+          PYTHONIOENCODING: utf-8
+        run: python scripts/dev/release_windows.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: desktron-windows-utf8-${{ matrix.python-utf8 }}
+          path: |
+            dist/desktron-windows-*.zip
+            dist/desktron-windows-*.zip.sha256
+            dist/desktron-windows-*.zip.acceptance.json
+          if-no-files-found: error

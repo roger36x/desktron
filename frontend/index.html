@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="zh">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Desktron</title>
+  <!-- 手机端从「添加到主屏幕」进入时以独立窗口运行:地址栏与底部工具栏一起消失,竖向空间多出约 15%。
+       iOS 17 以下只认 apple-* 这组 meta,17 及以上和 Android 走 manifest,两套都留。
+       不加 viewport-fit=cover:让系统按安全区自动内缩,省掉一整套 env() 适配,代价只是底部 home 条那一条。 -->
+  <link rel="manifest" href="/manifest.json" crossorigin="use-credentials" />
+  <link rel="apple-touch-icon" href="/icon-180.png" sizes="180x180" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="desk" />
+  <!-- iOS 主屏网页只在解析到 apple-mobile-web-app-status-bar-style 时读取一次,之后改 content
+       不会重画状态栏。必须在产出这两枚 meta 之前先读当前端偏好,不能先写死再在后面的脚本改。 -->
+  <script>
+    (() => {
+      let light = false;
+      try {
+        const preference = localStorage.getItem("cd_theme_pref");
+        light = localStorage.getItem("cd_theme") === "light";
+        // 旧版曾提供「跟随系统」。升级时只读取一次当前系统外观并固化为浅色/深色，
+        // 此后不再监听系统变化；用户仍可在设置里重新明确选择。
+        if (preference === "system") {
+          if (window.matchMedia) light = matchMedia("(prefers-color-scheme: light)").matches;
+          localStorage.setItem("cd_theme_pref", light ? "light" : "dark");
+        } else if (preference === "light") light = true;
+        else if (preference === "dark") light = false;
+      } catch {}
+      window.cdInitialThemeLight = light;
+      document.documentElement.dataset.theme = light ? "light" : "cyan";
+      document.write('<meta name="apple-mobile-web-app-status-bar-style" content="' + (light ? "default" : "black") + '">');
+      document.write('<meta name="theme-color" content="' + (light ? "#ffffff" : "#191919") + '">');
+    })();
+  </script>
+  <!-- 原生壳(WKWebView)给窗口铺了 vibrancy 毛玻璃,页面因此 background: transparent。
+       浏览器里没有那层底,透明会露出浏览器默认的白,侧栏与页面区整片发白(远端经隧道访问时可见)。
+       这里在样式生效前打标,由 CSS 补一层不透明底；Windows 壳另报告实际材质能力，
+       不能把它的兼容 messageHandlers 桥当成毛玻璃已经可用。 -->
+  <script>
+    if (!(window.webkit && window.webkit.messageHandlers) || ['solid', 'pending'].includes(window.__deskWindowsBackdrop))
+      document.documentElement.classList.add('no-vibrancy');
+    // Windows 的系统字体（Segoe UI、微软雅黑）字重档位与字距都与 macOS 不同，排版需要单独校正。
+    // 按操作系统判断，而不是按原生壳：Windows 上的浏览器访问同样使用这些字体。
+    try {
+      const os = (navigator.userAgentData && navigator.userAgentData.platform) || navigator.userAgent || "";
+      if (/Windows/i.test(os)) document.documentElement.classList.add("os-windows");
+    } catch {}
+  </script>
+  <!-- 状态栏那一条的底色要跟主题走,否则浅色下顶上压着一块黑。独立窗口里它由 theme-color 着色
+       (iOS 16.4+ / Android),更老的 iOS 只认 apple-* 那个,且在启动解析时就读掉了。
+       主题存在服务端这里取不到,先按当前端偏好或上次缓存落一次,拿到真主题后 applyTheme 再校准。 -->
+  <script>
+    window.cdStatusBar = function (light) {
+      const t = document.querySelector('meta[name="theme-color"]');
+      if (t) t.setAttribute("content", light ? "#ffffff" : "#191919");
+      const s = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
+      if (s) s.setAttribute("content", light ? "default" : "black");
+    };
+    try { cdStatusBar(window.cdInitialThemeLight === true); } catch {}
+  </script>
+  <link rel="stylesheet" href="/style.css" />
+  <link rel="stylesheet" href="/window-chrome.css" />
+  <link rel="stylesheet" href="/vendor/github-dark.min.css" />
+</head>
+<body>
+  <div id="app">
+    <!-- 顶部窗口导航(仿 codex 红绿灯右侧):侧栏开合 + 主区后退/前进。fixed 定位,侧栏收起后仍可见 -->
+    <div id="top-nav">
+      <button id="tn-side" type="button" title="收起 / 展开侧栏"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="3"/><line x1="9.5" y1="4" x2="9.5" y2="20"/></svg></button>
+      <button id="tn-back" type="button" title="后退" disabled><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg></button>
+      <button id="tn-fwd" type="button" title="前进" disabled><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></button>
+    </div>
+    <!-- 两级导航单侧栏(原 rail+panel 合并):
+         品牌+搜索 / 固定入口 / 工作流与聊天树(#panel-list) / 任务弹层 / 底部任务中心+设置+引擎条 -->
+    <aside id="panel">
+      <header class="side-brand">
+        <span class="brand">Desktron</span>
+
+        <span id="panel-title" hidden></span>
+        <button id="panel-files" hidden></button>
+        <button id="new-session" hidden></button>
+        <button id="side-search-btn" type="button" title="搜索会话">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        </button>
+        <!-- 搜索框:品牌行内横向展开,覆盖品牌字,不改变纵向布局 -->
+        <div class="side-search" id="side-search" hidden>
+          <input id="side-search-inp" placeholder="搜索会话…" spellcheck="false" autocomplete="off">
+        </div>
+      </header>
+      <div class="side-fixed">
+        <button class="side-fx" id="fx-tasks" type="button"><span class="fx-ic fx-ic-arrangements" aria-hidden="true"></span><span data-desk-key="nav.arrangements">安排</span></button>
+        <button class="side-fx" id="fx-new" type="button"><span class="fx-ic fx-ic-chat" aria-hidden="true"></span><span data-desk-key="nav.chat">聊天</span></button>
+        <button class="side-fx" id="fx-apps" type="button"><span class="fx-ic fx-ic-apps" aria-hidden="true"></span><span data-desk-key="nav.apps">应用</span></button>
+      </div>
+      <div class="side-sec" id="proj-head"><span data-desk-key="nav.workflows">工作流</span><button id="proj-add" type="button" title="新建工作流"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button><button id="proj-fold-all" type="button" title="全部折叠"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></button></div>
+      <div id="panel-list"></div>
+      <!-- 任务面板:原 TaskDock(TASKS.md,app-tasks.js 渲染),改为点底部「任务中心」上弹 -->
+      <div id="task-dock" hidden></div>
+      <footer class="side-foot">
+        <span id="engine-status"></span>
+        <div class="foot-row">
+          <button class="side-fx" id="engine-pick" type="button" title="切换引擎（订阅引擎走本机 CLI 登录态）"></button>
+          <button class="foot-ic" id="settings-btn" type="button" title="设置"><span class="settings-icon" aria-hidden="true"></span></button>
+        </div>
+        <div id="engine-menu" class="float-menu" hidden></div>
+      </footer>
+      <div id="panel-resizer" title="拖动调宽,双击复位"></div>
+    </aside>
+    <main id="main">
+      <div id="main-stage">
+      <!-- 全局标签条(#pagestack)与它右端那枚「+」已撤:顶栏就是当前应用或会话自己的顶栏,
+           跨应用切换归程序坞,多开归应用内部。开网页走浏览器应用标签条上的「+」或 ⌘T。 -->
+      <!-- 资产/落地页视图的标题条(工作区说明 / 知识文档),由 showView('asset') 显示 -->
+      <header id="conv-head" hidden><span id="conv-title"></span><span id="conv-actions"></span></header>
+      <div id="asset-view" hidden>
+        <div id="asset-body" class="md"></div>
+      </div>
+      <!-- 终端嵌入:三引擎全走真实 TUI(xterm.js ↔ /term WebSocket ↔ PTY) -->
+      <div id="terminal" hidden>
+        <div id="term-head" hidden><span id="term-title"></span><span id="term-cwd" class="cwd-badge" hidden></span><!-- 换成 HTML 视图看同一段会话:两条路最终都是 claude --resume <同一个 uuid>,历史在同一份 transcript 里,
+          所以这不是迁移而是换个视图。放标题栏里、跟在打开目录钮之后,那一行本来就是这段会话的操作位。 --><button id="term-tohtml" type="button" title="网页视图" hidden><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="3"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="7" y1="13.5" x2="15" y2="13.5"/><line x1="7" y1="16.5" x2="12" y2="16.5"/></svg></button></div>
+        <button id="term-fullscreen" type="button" title="全屏">
+          <svg class="fs-expand" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+          <svg class="fs-shrink" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+        </button>
+        <!-- 收起:回上一个视图,会话进程与 pane 都保活(与应用页 #ov-min 同义) -->
+        <button id="term-min" type="button" title="收起" hidden>
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="6" y1="12" x2="18" y2="12"/></svg>
+        </button>
+        <!-- 会话刻度条:全屏下侧栏不可见,靠它切会话;悬停展开成带标题的列表 -->
+        <div id="term-toc" class="wf-toc ticks" hidden></div>
+        <div id="term-host"></div>
+        <!-- 手机端附加键栏:软键盘没有 Esc / Tab / 方向键,TUI 又离不开它们。
+             只在窄屏且终端在场时显示(样式里判断),按下即把对应转义序列写进 PTY。 -->
+        <div id="term-keys"></div>
+      </div>
+      <div id="overlay">
+        <header id="overlay-head">
+          <!-- 老的全局网页控件(前进/后退/刷新 + 地址栏)已随全局标签条一并撤掉:网页归浏览器应用,
+               地址栏与导航钮是它自己的(app-browser.js 把标签条放进 #overlay-title 的插槽,
+               地址栏那一行在页内),全局这一份不再有页会命中。 -->
+          <span id="overlay-title"></span>
+          <span class="head-actions">
+            <!-- 最近打开过的三个应用:点一下回到它,省得再去程序坞或应用页找一遍(见 renderHeadRecent) -->
+            <span id="ov-recent" hidden></span>
+            <button id="ov-external" type="button" title="在浏览器打开" hidden>
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polygon points="16.2 7.8 13.4 13.4 7.8 16.2 10.6 10.6 16.2 7.8"/></svg>
+            </button>
+            <button id="ov-toterm" type="button" title="终端视图" hidden>
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="3"/><polyline points="7.5 10 10.5 12.5 7.5 15"/><line x1="13" y1="15" x2="17" y2="15"/></svg>
+            </button>
+            <button id="ov-toside" type="button" title="收回侧边栏" aria-label="收回侧边栏">
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="15" rx="3"/><line x1="15" y1="4.5" x2="15" y2="19.5"/></svg>
+            </button>
+            <button id="ov-min" type="button" title="收起">
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="6" y1="12" x2="18" y2="12"/></svg>
+            </button>
+            <button id="ov-info" type="button" title="打开信息栏" aria-label="打开信息栏" aria-expanded="false">
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="6.5" cy="7.5" r="2"/><line x1="11" y1="7.5" x2="19" y2="7.5"/><circle cx="6.5" cy="16.5" r="2"/><line x1="11" y1="16.5" x2="19" y2="16.5"/></svg>
+            </button>
+            <button id="ov-close" type="button" title="关闭">
+              <svg class="ov-close-icon" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              <svg class="ov-side-icon" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="15" rx="3"/><line x1="15" y1="4.5" x2="15" y2="19.5"/></svg>
+            </button>
+          </span>
+        </header>
+        <div id="overlay-body"></div>
+      </div>
+      </div>
+      <!-- 近期应用的紧凑宿主：与主区复用同一个页面节点，展开时只迁移、不重建。 -->
+      <aside id="app-side" aria-label="应用侧栏" hidden>
+        <div id="app-side-resizer" role="separator" aria-orientation="vertical"
+             aria-label="调整应用侧栏宽度" title="拖动调宽，双击复位"></div>
+        <header id="app-side-head" class="app-side-head">
+          <span id="app-side-title"></span>
+          <span class="head-actions">
+            <button id="app-side-expand" type="button" title="在主区展开" aria-label="在主区展开">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="14 5 19 5 19 10"/><polyline points="10 19 5 19 5 14"/><line x1="19" y1="5" x2="13" y2="11"/><line x1="5" y1="19" x2="11" y2="13"/></svg>
+            </button>
+            <button id="app-side-collapse" type="button" title="收起侧边栏" aria-label="收起侧边栏">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="14" rx="3"/><line x1="11" y1="5" x2="11" y2="19"/></svg>
+            </button>
+          </span>
+        </header>
+        <div id="app-side-body"></div>
+      </aside>
+      <aside id="app-side-2" aria-label="第二应用侧栏" hidden>
+        <header id="app-side-head-2" class="app-side-head">
+          <span id="app-side-title-2"></span>
+          <span class="head-actions">
+            <button id="app-side-expand-2" type="button" title="在主区展开" aria-label="在主区展开">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="14 5 19 5 19 10"/><polyline points="10 19 5 19 5 14"/><line x1="19" y1="5" x2="13" y2="11"/><line x1="5" y1="19" x2="11" y2="13"/></svg>
+            </button>
+            <button id="app-side-collapse-2" type="button" title="收起侧边栏" aria-label="收起侧边栏">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="14" rx="3"/><line x1="11" y1="5" x2="11" y2="19"/></svg>
+            </button>
+          </span>
+        </header>
+        <div id="app-side-body-2"></div>
+      </aside>
+    </main>
+  </div>
+  <div id="settings-modal" hidden>
+    <div class="sm-backdrop"></div>
+    <div class="sm-panel" role="dialog" aria-modal="true" aria-label="设置">
+      <button id="sm-close" type="button" title="关闭设置" aria-label="关闭设置"><svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="m4 4 8 8M12 4l-8 8"/></svg></button>
+      <div id="sm-body" class="settings-center-live"></div>
+    </div>
+  </div>
+  <script src="/vendor/markdown-it.min.js" defer></script>
+  <script src="/vendor/highlight.min.js" defer></script>
+  <!-- 源码按区域分片维护；五个大组由服务端按原顺序虚拟合包，经典脚本共享全局作用域。 -->
+  <script src="/app-core.js" defer></script>
+  <script src="/app-rail.js" defer></script>
+  <script src="/app-pages.js" defer></script>
+  <script src="/app-browser.js" defer></script>
+  <script src="/app-terminal.js" defer></script>
+  <script src="/app-files.js" defer></script>
+  <script src="/app-tasks.js" defer></script>
+  <script src="/app-panel.js" defer></script>
+  <script src="/app-assets.js" defer></script>
+  <script src="/app-events.js" defer></script>
+  <script src="/app-chat.js" defer></script>
+  <script src="/app-settings.js" defer></script>
+  <script src="/app-logdock.js" defer></script>
+  <script src="/app-init.js" defer></script>
+</body>
+</html>
