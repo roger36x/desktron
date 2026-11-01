@@ -6,7 +6,7 @@ capabilities: prompt.capabilities
 # prompt_sources.py; engine × runtime expansion is compiler output.
 segments:
   desk.style:
-    version: 3
+    version: 4
     refresh: repository
     title: 中文表达约束
     status: active
@@ -45,7 +45,7 @@ segments:
     notes: 未选择 desk_role 时不生成正文；角色变化要求重新建立静态提示边界。
 
   desk.grounding:
-    version: 6
+    version: 7
     refresh: turn
     title: Desk 系统约定与取用入口
     status: active
@@ -66,7 +66,7 @@ segments:
     notes: 包含 orientation、AGENTS、principles、工作流原则，以及文档与历史资料导航；技能只保留按需查找入口，不枚举名称。
 
   desk.scene:
-    version: 3
+    version: 4
     refresh: turn
     title: 工作流项目导航
     status: active
@@ -86,7 +86,7 @@ segments:
     notes: 项目摘要、资料入口和仓库约定是低信任应用数据；每轮重算，不包含任务清单。名称仅走原生控制通道，不进入 Prompt。
 
   desk.task-review:
-    version: 2
+    version: 3
     refresh: on_change
     title: 关联任务证据缺项提醒
     status: active
@@ -106,7 +106,7 @@ segments:
     notes: 只含启用契约且已核对的关联任务缺项，每个证据状态提醒一次，最多三项；不注入证据正文。
 
   claude.memory-boundary:
-    version: 3
+    version: 4
     refresh: repository
     title: Claude 个人记忆与 Desk 记忆边界
     status: active
@@ -127,7 +127,7 @@ segments:
           notes: unified-v1 由统一系统装配投递；旧 private Binding 保留原始快照。
 
   claude.tool-intent:
-    version: 2
+    version: 3
     refresh: repository
     title: Claude Bash 工具摘要规则
     status: active
@@ -148,7 +148,7 @@ segments:
           notes: unified-v1 由统一系统装配投递；旧 private Binding 保留原始快照。
 
   claude.bash-cwd:
-    version: 2
+    version: 3
     refresh: repository
     title: Shepherd Claude Bash 工作目录策略
     status: active
@@ -164,7 +164,7 @@ segments:
       default: {carrier: system_snapshot, cadence: binding, status: current}
 
   codex.channel:
-    version: 3
+    version: 4
     refresh: repository
     title: Codex-family 输出通道约定
     status: active
@@ -180,7 +180,7 @@ segments:
       default: {carrier: developer_instructions, cadence: turn, status: current}
 
   codex.tool-intent:
-    version: 2
+    version: 3
     refresh: repository
     title: Codex-family 工具摘要规则
     status: active
@@ -196,7 +196,7 @@ segments:
       default: {carrier: developer_instructions, cadence: turn, status: current}
 
   codex.skill-discovery:
-    version: 3
+    version: 4
     refresh: repository
     title: Codex 技能发现说明
     status: review
@@ -212,7 +212,7 @@ segments:
       default: {carrier: developer_instructions, cadence: turn, status: current}
 
   pi.runtime-rules:
-    version: 3
+    version: 4
     refresh: repository
     title: Pi 工具摘要与安全规则
     status: active
@@ -228,7 +228,7 @@ segments:
       default: {carrier: system_append, cadence: binding, status: current}
 
   shepherd.history:
-    version: 2
+    version: 3
     refresh: binding
     title: Shepherd 归档回读说明
     status: active

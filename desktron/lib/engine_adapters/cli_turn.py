@@ -591,7 +591,8 @@ class TurnRunnerMixin:
                 import task_ledger
                 from deskcfg import DATA_HOME
                 task_hint = task_ledger.consume_review_hint(
-                    DATA_HOME, self.workspace, self.grounding_domain(sid) or '_desktop', sid)
+                    DATA_HOME, self.workspace, self.grounding_domain(sid) or '_desktop', sid,
+                    locale=getattr(self, 'session_locale', lambda _sid: 'zh')(sid))
             except Exception as exc:
                 try:
                     self._trace(sid, {'ev': 'task.review.error', 'error': str(exc)[:160]})

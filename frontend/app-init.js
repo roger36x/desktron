@@ -161,6 +161,16 @@ async function init() {
   // (2026-08-24 用户实报浅色下顶上仍是黑条)。请求失败就保持启动时按缓存落好的那一档。
   if (stateOk) applyTheme(wbState.ui && wbState.ui.theme);
   if (!wbState.sessions) wbState.sessions = {};
+  // 后端不知道界面语言。前端上报当前语言，后端自建的会话（安排、Bot、子任务）据此选择
+  // 提示语言；界面新建的会话另在请求中直接带上。已建会话的提示语言不随之改变。
+  const syncPromptLocale = () => {
+    const locale = DeskI18n.locale;
+    if (!stateOk || wbState.prompt_locale === locale) return;
+    wbState.prompt_locale = locale;
+    saveState({ prompt_locale: locale });
+  };
+  syncPromptLocale();
+  globalThis.addEventListener("desk-locale", syncPromptLocale);
   // 恢复展开的项目折叠(还原后重渲树:renderRail 那次跑在恢复前,折叠态是空的)
   try { const a = JSON.parse(localStorage.getItem("cd_expanded") || "[]"); if (Array.isArray(a)) expandedProjects = new Set(a); } catch {}
   renderSessionPanel();

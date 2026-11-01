@@ -91,10 +91,11 @@ def _generate_unified_pi(ad, connector, binding, sid, run, snap):
         window = runner_timeouts(opts, worker.options_catalog())['context_window']
     except Exception:
         window = 0
-    context_notice = ('此临时支线禁止工具。历史可能已压缩或省略；若所问精确内容不在当前'
-                      '上下文中，明确说明无法确认，不猜测、不声称已经检索原始历史。')
-    system = '\n\n'.join(str(x) for x in (worker.system_body(opts),
-                         opts.get('_grounding'), worker.PI_SAFETY, context_notice) if x)
+    import prompt_locale
+    locale = prompt_locale.of(opts)
+    context_notice = prompt_locale.text(_RECAP_CONTEXT_NOTICE, locale)
+    system = '\n\n'.join(str(x) for x in (worker.system_body(opts), opts.get('_grounding'),
+                         prompt_locale.text(worker.PI_SAFETY, locale), context_notice) if x)
     _, checkpoint, rounds = connector.context({**opts,
         '_context_window': window, '_context_admission': True,
         '_require_context_budget': window > 0,
@@ -168,6 +169,7 @@ def _generate_unified_claude(ad, connector, binding, sid, run, snap):
     from engine_adapters.recap import _engine_env, recap_prompt
     from .context_budget import estimate_context_tokens
     from .execution_budget import runner_timeouts
+    import prompt_locale
     worker = ad._worker('claude')
     opts = dict(snap.get('opts') or {})
     try:
@@ -179,7 +181,7 @@ def _generate_unified_claude(ad, connector, binding, sid, run, snap):
         '_context_window': window, '_context_admission': True,
         '_require_context_budget': window > 0,
         '_current_tokens': estimate_context_tokens({'system': system, 'input': recap_prompt(snap)}),
-        '_history_hint': _RECAP_CONTEXT_NOTICE,
+        '_history_hint': prompt_locale.text(_RECAP_CONTEXT_NOTICE, prompt_locale.of(opts)),
     }, read_only=True, cancelled=run.cancelled.is_set)
     if run.cancelled.is_set() or not ad._recap_context_ready(sid, snap):
         return ''
@@ -255,7 +257,8 @@ def _unified_pi_args(worker, connector, opts):
     system = '\n\n'.join(x for x in (worker.system_body(opts), grounding) if x)
     args = enforce_prompt_isolation(list(worker.build_cmd('', None, opts)[1:]))
     args = append_system_prompt_if_missing(args, system)
-    return append_system_prompt_if_missing(args, history_prompt(connector))
+    import prompt_locale
+    return append_system_prompt_if_missing(args, history_prompt(connector, prompt_locale.of(opts)))
 
 
 def _generate_unified_pi_affine(ad, connector, worker, sid, run, snap, opts, payload):

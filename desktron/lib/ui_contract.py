@@ -349,6 +349,10 @@ class UiContractMixin:
                 initial_opts = {}
                 if "desk_role" in body:
                     initial_opts["desk_role"] = body.get("desk_role")
+                # 界面语言决定这段会话的提示语言,建立后固定(prompt_locale.py)。
+                if isinstance(body.get("prompt_locale"), str) and body["prompt_locale"].strip():
+                    import prompt_locale
+                    initial_opts["prompt_locale"] = prompt_locale.normalize(body["prompt_locale"])
                 if body.get("shepherd_mode") is True:
                     initial_opts["shepherd_mode"] = True
                     initial_opts["active_engine"] = want

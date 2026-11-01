@@ -1321,6 +1321,8 @@ async function hsMaterializeDraft(v) {
     if (typeof shepherdMode !== "undefined" && shepherdMode) body.shepherd_mode = true;
     if (body.shepherd_mode && typeof shepherdTrial !== "undefined" && shepherdTrial)
       body.shepherd_trial = true;
+    // 会话的提示语言随界面语言，建立后固定
+    if (typeof DeskI18n !== "undefined") body.prompt_locale = DeskI18n.locale;
     s = await api("/session", {
       method: "POST", headers: { "content-type": "application/json" },
       body: JSON.stringify(body),
@@ -1444,6 +1446,8 @@ async function newHtmlSession(opts) {
     // 才不会重新继承目标工作流可能配置的业务角色。
     if (opts && Object.prototype.hasOwnProperty.call(opts, "desk_role"))
       body.desk_role = String(opts.desk_role || "");
+    // 会话的提示语言随界面语言，建立后固定
+    if (typeof DeskI18n !== "undefined") body.prompt_locale = DeskI18n.locale;
     s = await api("/session", { method: "POST", headers: { "content-type": "application/json" },
                                 body: JSON.stringify(body) });
   } catch (e) {

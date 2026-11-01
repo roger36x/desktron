@@ -28,6 +28,13 @@ def system_context(options):
 
 
 def compose_system(base, options, *deltas):
-    """One shared assembly boundary for all three public production adapters."""
+    """One shared assembly boundary for all three public production adapters.
+
+    Engine deltas are registered Chinese constants; English Conversations
+    receive their translations from prompt_locale.
+    """
+    import prompt_locale
+    locale = prompt_locale.of(options)
+    deltas = tuple(prompt_locale.text(str(part or ''), locale) for part in deltas)
     return '\n\n'.join(str(part).strip() for part in
                        (base, system_context(options), *deltas) if str(part or '').strip())

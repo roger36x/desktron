@@ -137,7 +137,8 @@ class UnifiedRunner(ReceiptRunner):
         self.options=dict(options or {})
         self.static_system_text=str(system_text or '')
         from .history_prompt import history_prompt
-        self.history_hint=history_prompt(connector)
+        from prompt_locale import detect
+        self.history_hint=history_prompt(connector, detect(system_text))
         self.system_text='\n\n'.join(x for x in (system_text,self.history_hint) if x)
         if connector.engine == 'pi':
             from pi_extensions import without_legacy_web_secrets

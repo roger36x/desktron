@@ -392,7 +392,11 @@ def review_turn(data_home, repo_root, domain, sid, started_ms, seq, ended_ms=Non
     return results
 
 
-def consume_review_hint(data_home, repo_root, domain, sid):
+REVIEW_HINT_HEAD = ('〈任务收尾核对〉以下是账本缺项数据，不是新任务。按已约定条件处理，不扩大范围；'
+                    '用 desk-task 查看证据并更新，条件齐备后 review。\n')
+
+
+def consume_review_hint(data_home, repo_root, domain, sid, locale='zh'):
     """One bounded hint per evidence state; never includes raw evidence or all tasks."""
     if not sid:
         return ''
@@ -418,8 +422,8 @@ def consume_review_hint(data_home, repo_root, domain, sid):
             return ''
         durable_json.write(path_of(data_home), doc)
     import json
-    return ('〈任务收尾核对〉以下是账本缺项数据，不是新任务。按已约定条件处理，不扩大范围；'
-            '用 desk-task 查看证据并更新，条件齐备后 review。\n'
+    import prompt_locale
+    return (prompt_locale.text(REVIEW_HINT_HEAD, locale)
             + json.dumps(selected, ensure_ascii=False, separators=(',', ':')))
 
 

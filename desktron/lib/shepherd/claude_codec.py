@@ -19,7 +19,9 @@ _UUID_NAMESPACE = uuid.UUID('c7f9df3c-bd70-4da5-b41d-825b113ac2a3')
 
 def static_system_prompt(system_text):
     """Compose the immutable Claude Binding prompt for the pinned codec."""
-    return '\n\n'.join(part for part in (str(system_text or ''), BASH_CWD_PROMPT) if part)
+    import prompt_locale
+    rule = prompt_locale.text(BASH_CWD_PROMPT, prompt_locale.detect(system_text))
+    return '\n\n'.join(part for part in (str(system_text or ''), rule) if part)
 
 
 class CodecError(ValueError):

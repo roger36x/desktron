@@ -352,7 +352,9 @@ class PiAdapter(PiSubagentViewMixin, CliAdapter):
                 return ""
             body = (body + "\n\n" + grounding) if body else grounding
             # recap 没有工具，只保留数据边界；不要把 Bash 用法带进一个 --no-tools 回合。
-            body = (body + "\n\n" + self.PI_SAFETY) if body else self.PI_SAFETY
+            import prompt_locale
+            safety = prompt_locale.text(self.PI_SAFETY, prompt_locale.of(opts))
+            body = (body + "\n\n" + safety) if body else safety
             cmd += ["--append-system-prompt", body, "--", recap_prompt(snap)]
             try:
                 proc = subprocess.Popen(
@@ -549,7 +551,8 @@ class PiAdapter(PiSubagentViewMixin, CliAdapter):
             cmd += ["--thinking", effort]
         body = self._turn_system_prompt(opts, opts.get("_grounding"))
         if opts.get('_subagent_delivery'):
-            body += "\n\n" + SUBAGENT_DELIVERY_NOTICE
+            import prompt_locale
+            body += "\n\n" + prompt_locale.text(SUBAGENT_DELIVERY_NOTICE, prompt_locale.of(opts))
         # 预热是显式选择的端点优化，不因安装 Pi 或设置 Ollama provider 自动启用。
         warm_enabled = os.environ.get("PI_KV_WARMUP", "").strip().lower() in {"1", "true", "on", "yes"}
         warm_provider = os.environ.get("PI_KV_WARM_PROVIDER", "").strip()

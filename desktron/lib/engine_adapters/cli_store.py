@@ -121,10 +121,12 @@ class SessionStoreMixin:
         with self._lock:
             return str((self.index.get(sid) or {}).get("model") or "")
 
-    def style_body(self):
-        """表达约束(prompts/style.md),各引擎共用的系统级约束。"""
+    def style_body(self, locale="zh"):
+        """表达约束(prompts/style.md;英文会话用 style.en.md),各引擎共用的系统级约束。"""
+        import prompt_locale
+        rel = prompt_locale.localized_rel(self.workspace, os.path.join("prompts", "style.md"), locale)
         try:
-            with open(os.path.join(self.workspace, "prompts", "style.md"), encoding="utf-8") as f:
+            with open(os.path.join(self.workspace, rel), encoding="utf-8") as f:
                 return f.read(8192).strip()
         except Exception:
             return ""
@@ -139,7 +141,8 @@ class SessionStoreMixin:
 
     def system_body(self, opts):
         role = self._desk_role_name((opts or {}).get("desk_role"))
-        parts = [self.agent_body(role) if role else "", self.style_body()]
+        import prompt_locale
+        parts = [self.agent_body(role) if role else "", self.style_body(prompt_locale.of(opts))]
         return "\n\n".join(x for x in parts if x)
 
     def _agents_dir(self):
@@ -397,6 +400,14 @@ class SessionStoreMixin:
             obj["task"] = True
         if isinstance(opts, dict):
             obj["opts"] = self.normalize_options(opts)
+        # Prompt language is fixed at creation (see prompt_locale.py).  Only a
+        # reported language is recorded; absent means the original Chinese prompt.
+        import prompt_locale
+        lang = (prompt_locale.explicit((opts or {}).get(prompt_locale.OPTION))
+                if isinstance(opts, dict) else "") or prompt_locale.default_locale()
+        if lang:
+            obj["prompt_locale"] = lang
+            obj.setdefault("opts", {})[prompt_locale.OPTION] = lang
         with self._lock:
             if _turn_guard is not None:
                 self._turn_locks[sid] = _turn_guard
@@ -406,6 +417,13 @@ class SessionStoreMixin:
 
     def session_domain(self, sid):
         return (self.index.get(sid) or {}).get("domain") or ""
+
+    def session_locale(self, sid):
+        """Prompt language fixed when this Conversation was created."""
+        import prompt_locale
+        row = self.index.get(sid) or {}
+        return prompt_locale.normalize(row.get("prompt_locale")
+                                       or (row.get("opts") or {}).get(prompt_locale.OPTION))
 
     def _session_roots(self, sid, opts):
         """Return explicit writable roots registered for this conversation.
@@ -477,7 +495,8 @@ class SessionStoreMixin:
         try:
             from grounding import build
             g = build(self.workspace, self.grounding_domain(sid),
-                      first_turn=first_turn, engine=self.grounding_engine(sid))
+                      first_turn=first_turn, engine=self.grounding_engine(sid),
+                      locale=self.session_locale(sid))
             if (g.get("constant") or "").strip():
                 # 注入成功即刷新标记:合成 AGENTS.md 那条老路据它自动退休(domains._legacy_agents_md_off)。
                 # 不设人工开关——注入自己证明自己可用;坏掉时标记过期,老路自动恢复。
@@ -555,6 +574,9 @@ class SessionStoreMixin:
                and isinstance(v, (str, int, float, bool, type(None)))}
         if "desk_role" in out:
             out["desk_role"] = self._desk_role_name(out["desk_role"])
+        if "prompt_locale" in out:
+            import prompt_locale
+            out["prompt_locale"] = prompt_locale.normalize(out["prompt_locale"])
         return out
 
     def update_session_options(self, sid, patch, fallback=None):
@@ -1361,6 +1383,15 @@ class SessionStoreMixin:
                 src_opts = (self.index.get(sid) or {}).get("opts")
                 if isinstance(src_opts, dict):
                     e["opts"] = dict(src_opts)
+                # A branch keeps its parent's prompt language, never the current default.
+                src_lang = (self.index.get(sid) or {}).get("prompt_locale")
+                if src_lang:
+                    e["prompt_locale"] = src_lang
+                else:
+                    e.pop("prompt_locale", None)
+                    if isinstance(e.get("opts"), dict) and not (
+                            isinstance(src_opts, dict) and "prompt_locale" in src_opts):
+                        e["opts"].pop("prompt_locale", None)
             self._save_index()
         self.bus.publish({"type": "session.updated", "properties": {"sessionID": nsid}})
         return dict(self.index.get(nsid) or {}, id=nsid)

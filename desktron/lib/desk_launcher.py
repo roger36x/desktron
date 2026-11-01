@@ -220,7 +220,8 @@ def setup_workspace():
                                **oscompat.no_window_kwargs())
         except Exception:
             pass
-    for asset in (".claude", ".desk", "manifest.yaml", "prompts", "AGENTS.md", "common", "desk-docs"):
+    for asset in (".claude", ".desk", "manifest.yaml", "prompts", "AGENTS.md", "AGENTS.en.md",
+                  "common", "desk-docs"):
         source = os.path.join(PROJECT_ROOT, asset)
         if not os.path.exists(source):
             continue

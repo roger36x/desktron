@@ -292,6 +292,8 @@ class ShepherdAdapter(ShepherdSubagentsMixin, ShepherdRecapMixin, CliAdapter):
             opts = {**copy.deepcopy(source.get('opts') or {}),
                     **self.session_options(sid, engine=engine),
                     'shepherd_mode': True, 'active_engine': engine}
+            # A branch keeps its parent's prompt language, never the current default.
+            opts['prompt_locale'] = source.get('prompt_locale') or 'zh'
             child = self.create_session(domain=source.get('domain') or '',
                 task=bool(source.get('task')), opts=opts, _turn_guard=child_guard)['id']
             # Settings belong to the facade; no native grants, resident hosts,
@@ -1151,7 +1153,9 @@ class ShepherdAdapter(ShepherdSubagentsMixin, ShepherdRecapMixin, CliAdapter):
         value = dict(raw) if isinstance(raw, dict) else {}
         if inherited:
             value.pop('desk_role', None)
-        for key in ('shepherd_mode','shepherd_trial','active_engine'):
+        # Prompt language is Conversation metadata kept on the facade row,
+        # so switching engines never changes or drops it.
+        for key in ('shepherd_mode','shepherd_trial','active_engine','prompt_locale'):
             value.pop(key, None)
         return value
 
@@ -1227,7 +1231,11 @@ class ShepherdAdapter(ShepherdSubagentsMixin, ShepherdRecapMixin, CliAdapter):
         inherited = self._engine_input_options(fallback, inherited=True)
         saved = self._engine_input_options(self.saved_engine_options(sid, selected))
         worker = self._worker(selected)
-        return self._engine_options(selected, worker, {**inherited, **saved})
+        out = self._engine_options(selected, worker, {**inherited, **saved})
+        # Chinese is the default prompt language and needs no option.
+        if self.session_locale(sid) == 'en':
+            out['prompt_locale'] = 'en'
+        return out
 
     def execution_options(self, sid, fallback=None):
         """Options for the immutable Producer chosen at the turn boundary."""

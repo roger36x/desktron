@@ -3,9 +3,27 @@
   "reviews": [
     {
       "path": "desk-docs/settings.md",
-      "sha256": "6a40211d6d445f71212e1b6c65225a2b2ce917488a542d256da42905cc2a3561",
+      "sha256": "50095d2493468de9fc05b5a636cbbf9f5e2d886b5817816e102a1e4a96cf6def",
       "rules": ["private-ip-review"],
       "reason": "Generic RFC1918 address/prefix documentation example and CGNAT exclusion, not deployment data."
+    },
+    {
+      "path": "desk-docs/en/settings.md",
+      "sha256": "3403acd10f6b45b7dee9748c8e62ad308b0176c3bd3d51ae550ed382ca1af8ac",
+      "rules": ["private-ip-review"],
+      "reason": "English translation of desk-docs/settings.md; same generic RFC1918 address/prefix example and CGNAT exclusion, not deployment data."
+    },
+    {
+      "path": "AGENTS.en.md",
+      "sha256": "bf66085b3e2b87f9cf1b6667e6edcd33e6aa0e75661462a2ed65b3c56e589c00",
+      "rules": ["personal-home-path"],
+      "reason": "English translation of AGENTS.md; portable $HOME product subdirectory is mistaken for an OS home; no personal absolute path."
+    },
+    {
+      "path": "desk-docs/en/sessions.md",
+      "sha256": "b96d789c7244d5fb88d70bae5068d35017cb9919ce56b3f35c3c07a263b67d41",
+      "rules": ["personal-home-path"],
+      "reason": "English translation of desk-docs/sessions.md; portable environment-based product command path, no user path, token or credential."
     },
     {
       "path": "desktron/lib/lan_settings.py",

@@ -109,7 +109,7 @@ setup_workspace() {
   # AGENTS.md 必须在列:codex 唯一自动加载的项目文档就是 cwd→git root 间的 AGENTS.md;
   # workspace 是 git root,缺它 codex 就只读到全局 ~/.codex/AGENTS.md,项目约定一片空白。
   # 角色正身在 .desk/agents(引擎无关),与技能、约定一并软链进工作区。
-  for asset in .claude .desk manifest.yaml prompts AGENTS.md common desk-docs; do
+  for asset in .claude .desk manifest.yaml prompts AGENTS.md AGENTS.en.md common desk-docs; do
     local link="$WORKSPACE/$asset" target="$PRODUCT_LINK_ROOT/$asset"
     # generation 首装时 canonical home 尚未切换，目标会暂时是悬空链接；资产是否
     # 存在应检查当前 generation，切换 home 后这些稳定链接会同时生效。

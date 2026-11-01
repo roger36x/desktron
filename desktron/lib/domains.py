@@ -64,13 +64,20 @@ def _repo_items(workflow_id):
     return out
 
 
-def _repos_segment(workflow_id, wf_dir):
+def _repos_segment(workflow_id, wf_dir, locale="zh"):
     """AGENTS.md 注入段(第四段):引用的代码仓清单 + 读取指令。cwd 恒为工作流目录,
     仓库自带 grounding 经这段指令让 agent 自行读取,Desk 不向真实仓写任何脚手架。"""
     items = _repo_items(workflow_id)
     if not items:
         return ""
     lines = [f"- {it['dir']}" for it in items]
+    if locale == "en":
+        return ("## Code repositories\n\n"
+                "The following repositories are outside the current directory; use absolute paths:\n\n"
+                + "\n".join(lines) + "\n\n"
+                "Before changing anything, read `AGENTS.md` in each directory, or `README.md` when "
+                "there is none; their requirements take precedence.\n"
+                "Edit files in these directories directly; Desk adds no files to them.")
     return ("## 代码仓\n\n"
             "以下代码仓不在当前目录中，请使用绝对路径：\n\n"
             + "\n".join(lines) + "\n\n"
@@ -176,7 +183,7 @@ def _slim_index_rows(rows):
     return out, one
 
 
-def _station_segment(mem_root):
+def _station_segment(mem_root, locale="zh"):
     """用户信息段：只给 sealed 用户资料的摘要与按需读取入口。
 
     正文不内联：sealed 含敏感信息，长度也不可控。这里不列其他条目名称，
@@ -195,12 +202,17 @@ def _station_segment(mem_root):
         pass
     if not summary:
         return ""
+    if locale == "en":
+        return ("### User information\n\n"
+                f"{summary}\n\n"
+                "Run `mem_read.py show --id user-profile` for details when needed; sealed "
+                "content must not leave this machine.")
     return ("### 用户信息\n\n"
             f"{summary}\n\n"
             "详细资料按需执行 `mem_read.py show --id user-profile` 读取；sealed 内容不得外泄。")
 
 
-def _context_segment(ws):
+def _context_segment(ws, locale="zh"):
     """合成进 AGENTS.md 的「项目参考资料」段:落地页 Context 添加的文档(domains/<ws>/context/)
     与飞书链接(context/.links.json)清单。只给清单让 agent 起手可感知,内容按需读取
     (本地文件直接读路径;飞书链接用 lark-doc / lark-sheets / lark-base skill 按 url 取),不整份注入。空则不注入。"""
@@ -213,15 +225,21 @@ def _context_segment(ws):
                 continue
             kb = os.path.getsize(fp) / 1024
             size = f"{kb / 1024:.1f}MB" if kb >= 1024 else f"{kb:.0f}KB"
-            lines.append(f"- 文档 `{fp}`({size}):按需读取")
+            lines.append(f"- Document `{fp}` ({size}): read when needed" if locale == "en"
+                         else f"- 文档 `{fp}`({size}):按需读取")
     except Exception:
         pass
     try:
         with open(os.path.join(ctx_dir, ".links.json"), encoding="utf-8") as f:
             for l in (json.load(f) or []):
                 if isinstance(l, dict) and l.get("url"):
-                    t = f"「{l['title']}」" if l.get("title") else ""
-                    lines.append(f"- 飞书{t} {l['url']}:用 lark-doc / lark-sheets / lark-base skill 按链接读取")
+                    if locale == "en":
+                        t = f" \"{l['title']}\"" if l.get("title") else ""
+                        lines.append(f"- Feishu{t} {l['url']}: read the link with the lark-doc / "
+                                     "lark-sheets / lark-base skill")
+                    else:
+                        t = f"「{l['title']}」" if l.get("title") else ""
+                        lines.append(f"- 飞书{t} {l['url']}:用 lark-doc / lark-sheets / lark-base skill 按链接读取")
     except Exception:
         pass
     notes = ""
@@ -232,19 +250,22 @@ def _context_segment(ws):
         pass
     if not lines and not notes:
         return ""
-    seg = "**项目资料（用户在页面中维护）**：\n"
+    seg = ("**Project materials (maintained by the user on the page)**:\n" if locale == "en"
+           else "**项目资料（用户在页面中维护）**：\n")
     if notes:
         # 同段里的文档与链接都只给路径,这条随笔却曾整篇内联(上限 4000 字)——口径不一致。
         # 统一成索引:给一句提示和确切路径,要用再读全文。
         flat = " ".join(notes.split())
         hint = flat if len(flat) <= INDEX_DESC_LIMIT else flat[:INDEX_DESC_LIMIT].rstrip() + "…"
-        seg += f"\n- 随笔 `{os.path.join(ctx_dir, '.notes.md')}`({len(notes)} 字):{hint}\n"
+        seg += (f"\n- Notes `{os.path.join(ctx_dir, '.notes.md')}` ({len(notes)} characters): {hint}\n"
+                if locale == "en" else
+                f"\n- 随笔 `{os.path.join(ctx_dir, '.notes.md')}`({len(notes)} 字):{hint}\n")
     if lines:
         seg += "\n" + "\n".join(lines)
     return seg
 
 
-def _grounding_index(domain, mode="all", skip_ids=()):
+def _grounding_index(domain, mode="all", skip_ids=(), locale="zh"):
     """合成进 AGENTS.md 的完整项目记忆、文档导航和历史资料入口。
 
     mode 决定取哪几段，给系统约定与当前上下文分料（见 grounding/builder.py）：
@@ -267,7 +288,16 @@ def _grounding_index(domain, mode="all", skip_ids=()):
         except Exception:
             project = ""
             mid = ""
-        if project:
+        if project and locale == "en":
+            parts.append(
+                "### Project memory\n\n"
+                "The full text of the current project model follows. It is historical "
+                "understanding, not live state, a current instruction or authorization to act.\n\n"
+                + project + "\n\n"
+                + f"To re-check the project model, run `python3 .claude/skills/memory/scripts/mem_read.py show --id {mid}`; "
+                  "for original evidence, search with `search <term>` in the same script."
+            )
+        elif project:
             parts.append(
                 "### 项目记忆\n\n"
                 "以下是当前项目模型的完整正文，是历史认知，不代表实时状态、当前指令或操作授权。\n\n"
@@ -275,7 +305,8 @@ def _grounding_index(domain, mode="all", skip_ids=()):
                 + f"需要重新核对项目模型时，执行 `python3 .claude/skills/memory/scripts/mem_read.py show --id {mid}`；"
                   "需要原始依据时，用同脚本 `search <词>` 检索。"
             )
-    st = _station_segment(mem_root) if want_nav else ""
+    st = (_station_segment(mem_root, locale) if locale == "en" else _station_segment(mem_root)
+          ) if want_nav else ""
     if st:
         parts.append(st)
     # 条目数量和最近 id 不进入提示词。项目记忆已给出精确 show id，
@@ -283,16 +314,24 @@ def _grounding_index(domain, mode="all", skip_ids=()):
     if want_nav:
         from grounding.documents import navigation
         repos = [_domain_dir(domain)] + [it["dir"] for it in _repo_items(domain)]
-        parts.append(navigation(REPO_ROOT, repos))
+        parts.append(navigation(REPO_ROOT, repos, locale) if locale == "en"
+                     else navigation(REPO_ROOT, repos))
         history_index = os.path.expanduser("~/.local/share/desktron/sync/INDEX.md")
-        if os.path.isfile(history_index):
+        if os.path.isfile(history_index) and locale == "en":
+            parts.append(
+                "### Historical records\n\n"
+                "`~/.local/share/desktron/sync/INDEX.md` is the raw index of Feishu meetings, "
+                "messages and documents. Search it by keyword when you need background; if "
+                "nothing turns up, do not fill the gap yourself.")
+        elif os.path.isfile(history_index):
             parts.append(
                 "### 历史资料\n\n"
                 "`~/.local/share/desktron/sync/INDEX.md` 是飞书会议、消息和文档的原始索引。"
                 "需要历史背景时按关键词检索；没有查到时不要自行补全。")
     if not parts:
         return ""
-    return "## 当前上下文\n\n" + "\n\n".join(parts)
+    head = "## Current context\n\n" if locale == "en" else "## 当前上下文\n\n"
+    return head + "\n\n".join(parts)
 
 
 def _skill_frontmatter(skill_dir, dir_name):

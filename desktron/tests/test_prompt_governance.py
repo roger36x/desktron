@@ -28,11 +28,11 @@ def test_registry_compiles_all_execution_modes_and_segments():
     assert 'desk.session-name' not in ids
     versions = {row["id"]: row["version"] for row in compiled["segments"]}
     changed = {
-        "desk.style": 3, "desk.grounding": 6, "desk.scene": 3, 'desk.task-review': 2,
-        "claude.memory-boundary": 3, "claude.tool-intent": 2, "claude.bash-cwd": 2,
-        "codex.channel": 3, "codex.tool-intent": 2, "codex.skill-discovery": 3,
-        "pi.runtime-rules": 3,
-        "pi.native-default": 2, "shepherd.history": 2,
+        "desk.style": 4, "desk.grounding": 7, "desk.scene": 4, 'desk.task-review': 3,
+        "claude.memory-boundary": 4, "claude.tool-intent": 3, "claude.bash-cwd": 3,
+        "codex.channel": 4, "codex.tool-intent": 3, "codex.skill-discovery": 4,
+        "pi.runtime-rules": 4,
+        "pi.native-default": 2, "shepherd.history": 3,
     }
     assert all(versions[name] == version for name, version in changed.items())
     assert all(version == 1 for segment, version in versions.items() if segment not in changed)

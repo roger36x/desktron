@@ -574,8 +574,11 @@ class CodexAdapter(RecallMixin, CodexRolloutMixin, CodexSubagentsMixin, CliAdapt
         return super()._session_roots(sid, opts)
 
     def system_body(self, opts):
+        import prompt_locale
         body = super().system_body(opts)
-        return "\n\n".join(x for x in (body, self.CHANNEL_RULE, self.INTENT_RULE) if x)
+        locale = prompt_locale.of(opts)
+        return "\n\n".join(x for x in (body, prompt_locale.text(self.CHANNEL_RULE, locale),
+                                        prompt_locale.text(self.INTENT_RULE, locale)) if x)
 
     SEED_DELTA = CODEX_DELTA   # 引擎专属起手提示
 
