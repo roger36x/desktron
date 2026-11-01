@@ -13,6 +13,7 @@ Desktron sits above these engines and maintains a unified project memory and ses
 - **Session management** — session history is archived in one place, with compression, checkpoints, and cross-session search.
 - **Workflows and tasks** — organize work into workflows, track task status, and reference code repositories.
 - **Built-in apps** — ships with 7 desktop apps: Notes, Excalidraw, Terminal, Browser, Monaco IDE, File Explorer, and TaskNote.
+- **Free web search and fetch** — Pi Agent gets built-in `web_search` and `web_fetch` with no API key. Search runs on DuckDuckGo in a throwaway anonymous tab of the desktop shell's built-in browser; fetch reads pages over direct HTTP with public-address and per-redirect checks. Neither carries your cookies or sign-in. Claude and Codex keep their own native web tools.
 - **Scheduled tasks** — set up timed or manually triggered maintenance and execution tasks.
 - **Mobile access** — connect from a phone or other device on the local network.
 
@@ -57,6 +58,7 @@ Network and organization-specific addresses are provided via environment variabl
 | --- | --- |
 | `DESKTRON_REMOTE_TOKEN` | Enables LAN access and requires this token |
 | `DESKTRON_INTERNAL_DOMAINS` | Comma-separated internal domains; the web tool will not fetch these |
+| `DESKTRON_WEB_TOOLS` | Set to `0` to disable Pi's `web_search` and `web_fetch` (on by default) |
 | `DESKTRON_UPDATE_BASE` | Self-hosted update URL; unset means no update checks |
 | `DESKTRON_SETUP_PROXY` | Proxy for first-run runtime downloads if direct access fails |
 
@@ -95,6 +97,7 @@ Desktron 解决的是这个问题。它在多个引擎之上维护统一的项�
 - **会话管理**：会话历史统一归档，支持压缩、检查点和跨会话检索。
 - **工作流与任务**：按项目组织工作流，管理任务状态和代码仓引用。
 - **内置工具**：随附 7 个桌面应用——备忘录、Excalidraw、终端、浏览器、Monaco IDE、文件浏览器和 TaskNote。
+- **免费网页搜索与抓取**：Pi Agent 内置 `web_search` 和 `web_fetch`，无需 API key。搜索在桌面壳内置浏览器的一次性匿名标签中使用 DuckDuckGo；抓取以直连 HTTP 读取网页，并逐跳校验公网地址和重定向。两者都不携带用户 Cookie 或登录身份。Claude 和 Codex 继续使用各自原生的网页工具。
 - **定时安排**：设置定时或手动触发的维护与执行任务。
 - **手机访问**：局域网内从手机或其他设备连入工作台。
 
@@ -139,6 +142,7 @@ bash desktron/bin/desktron ui 7765            # 打开 http://127.0.0.1:7765/ �
 | --- | --- |
 | `DESKTRON_REMOTE_TOKEN` | 设置后开放局域网访问，并要求该令牌 |
 | `DESKTRON_INTERNAL_DOMAINS` | 逗号分隔的内网域名，网页工具不抓取这些域名 |
+| `DESKTRON_WEB_TOOLS` | 设为 `0` 可关闭 Pi 的 `web_search` 和 `web_fetch`（默认开启） |
 | `DESKTRON_UPDATE_BASE` | 自托管的更新地址；不设置则不检查更新 |
 | `DESKTRON_SETUP_PROXY` | 首次下载运行时失败时使用的代理 |
 
