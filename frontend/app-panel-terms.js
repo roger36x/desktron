@@ -874,7 +874,13 @@ function startTermPoll() {
       if (want !== have) renderLooseSessions(loose);
       else for (const r of rows) { const t = byOrderId.get(r.dataset.orderId || r.dataset.sid || r.title); if (t) updateTermRow(r, t); }
     }
-    if (activeTermId) {   // 主区终端头:未初始化(newTerminal/恢复路径不经行点击)则补建,已建则标题保鲜
+    // 主区终端头:未初始化(newTerminal/恢复路径不经行点击)则补建,已建则标题保鲜。
+    // 欢迎页在场时不补建:切引擎重载后,恢复流程先把上一引擎的会话页建出来(activeTermId 随之指向它),
+    // 再按本引擎快照落回欢迎页;这里若补建,会把那段会话的标题挂到欢迎页上,并经 setTermHead
+    // 摘掉 welcome-on,欢迎页退回 1040px 栏宽,两侧露出深一档的底色(2026-11-02 用户实见:
+    // Shepherd 切到 Pi 后欢迎页两边灰边)。
+    const welcomeShown = typeof _isWelcomeVisible === "function" && _isWelcomeVisible();
+    if (activeTermId && !welcomeShown) {
       const t = termById(activeTermId);
       if (t) {
         if (_termHeadSid !== t.id) setTermHead(t);

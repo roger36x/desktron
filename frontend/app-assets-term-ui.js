@@ -453,6 +453,10 @@ function _hideAllPanes() {
   for (const id in _termPanes) _termPanes[id].host.style.display = "none";
   if (_termWatermark) _termWatermark.style.display = "none";
 }
+// 欢迎页是否正摆在主区(浮层压在上面时也算:收起浮层回到的就是它)。
+function _isWelcomeVisible() {
+  return !!(_termWatermark && _termWatermark.style.display !== "none" && !_termWatermark.classList.contains("handoff-progress"));
+}
 function _isHandoffProgressVisible() {
   return !!(_termWatermark && _termWatermark.style.display !== "none" && _termWatermark.classList.contains("handoff-progress"));
 }
